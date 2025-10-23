@@ -16,6 +16,7 @@ import {
   Cell,
 } from "recharts";
 import { rooms } from "@/data/rooms";
+import { useAppData } from "@/context/AppDataContext";
 
 const CATEGORY_META = {
   "Learning Center": {
@@ -39,6 +40,7 @@ export default function RoomDetailPage() {
   const { id } = useParams();
   const room = rooms.find((r) => r.id === Number(id));
   const { favorites, toggleFavorite } = useAppData();
+  const isFavorite = favorites.includes(room?.id ?? -1);
 
   if (!room) {
     return (
@@ -172,8 +174,17 @@ export default function RoomDetailPage() {
               <button className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-sky-600">
                 Jetzt buchen
               </button>
-              <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:border-sky-200 hover:text-sky-700">
-                Merken
+              <button
+                type="button"
+                onClick={() => toggleFavorite(room.id)}
+                aria-pressed={isFavorite}
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 font-semibold shadow-sm transition ${
+                  isFavorite
+                    ? "border-rose-200 bg-rose-50 text-rose-600 hover:border-rose-300 hover:text-rose-700"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:text-sky-700"
+                }`}
+              >
+                {isFavorite ? "Gemerkter Raum" : "Merken"}
               </button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import logo from "./logo.png";
 import { rooms } from "@/data/rooms";
+import { AppDataProvider } from "@/context/AppDataContext";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -119,23 +120,24 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 text-slate-900`}
       >
-        <div className="relative flex min-h-screen bg-slate-100">
-          {/* Overlay for mobile navigation */}
-          {sidebarOpen && (
-            <div
-              className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
+        <AppDataProvider>
+          <div className="relative flex min-h-screen bg-slate-100">
+            {/* Overlay for mobile navigation */}
+            {sidebarOpen && (
+              <div
+                className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
 
-          {/* Sidebar */}
-          <aside
-            className={`fixed top-0 left-0 z-40 flex h-full w-72 transform flex-col border-r border-slate-200
-              bg-[#c0e3ff] px-5 py-6 text-slate-900 shadow-xl transition-transform duration-300
-              ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-              lg:relative lg:translate-x-0 lg:shadow-none`}
-          >
-            <div className="flex items-center gap-3">
+            {/* Sidebar */}
+            <aside
+              className={`fixed top-0 left-0 z-40 flex h-full w-72 transform flex-col border-r border-slate-200
+                bg-[#c0e3ff] px-5 py-6 text-slate-900 shadow-xl transition-transform duration-300
+                ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+                lg:relative lg:translate-x-0 lg:shadow-none`}
+            >
+              <div className="flex items-center gap-3">
               <Image
                 src={logo}
                 alt="SitCheck Logo"
@@ -330,7 +332,8 @@ export default function RootLayout({ children }) {
               })}
             </div>
           </nav>
-        </div>
+          </div>
+        </AppDataProvider>
       </body>
     </html>
   );
