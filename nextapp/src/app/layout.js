@@ -1,34 +1,123 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import logo from "./logo.png";
+import { rooms } from "@/data/rooms";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/" },
-  { label: "Buchungen", href: "/bookings" },
-  { label: "Einstellungen", href: "/settings" },
+  {
+    label: "Dashboard",
+    href: "/",
+    icon: (active) => (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-5 w-5 ${active ? "text-sky-600" : "text-slate-400"}`}
+      >
+        <path
+          d="M4.5 11a7.5 7.5 0 1115 0v8.25a.75.75 0 01-.75.75h-4.5v-5.25a1.5 1.5 0 00-1.5-1.5h-1.5a1.5 1.5 0 00-1.5 1.5V20H5.25a.75.75 0 01-.75-.75V11z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    label: "Buchungen",
+    href: "/bookings",
+    icon: (active) => (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-5 w-5 ${active ? "text-sky-600" : "text-slate-400"}`}
+      >
+        <path
+          d="M6.5 5.5a2 2 0 012-2h7a2 2 0 012 2v15l-5.5-2.75L6.5 20.5v-15z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    label: "Einstellungen",
+    href: "/settings",
+    icon: (active) => (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-5 w-5 ${active ? "text-sky-600" : "text-slate-400"}`}
+      >
+        <path
+          d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M19.4 13.5a7.5 7.5 0 00.05-3l1.75-1.32a.75.75 0 00.2-.95l-1.66-2.88a.75.75 0 00-.9-.35l-2.05.68a7.55 7.55 0 00-2.6-1.5l-.32-2.15A.75.75 0 0013.12 1h-2.24a.75.75 0 00-.74.64l-.32 2.15a7.55 7.55 0 00-2.6 1.5L5.17 4.01a.75.75 0 00-.9.35L2.6 7.24a.75.75 0 00.2.95L4.55 9.5a7.5 7.5 0 000 3l-1.75 1.32a.75.75 0 00-.2.95l1.66 2.88a.75.75 0 00.9.35l2.05-.68a7.55 7.55 0 002.6 1.5l.32 2.15a.75.75 0 00.74.64h2.24a.75.75 0 00.74-.64l.32-2.15a7.55 7.55 0 002.6-1.5l2.05.68a.75.75 0 00.9-.35l1.66-2.88a.75.75 0 00-.2-.95L19.4 13.5z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
 ];
 
 export default function RootLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
     setSidebarOpen(false);
+    setSearchTerm("");
+    setSearchFocused(false);
   }, [pathname]);
+
+  const suggestions = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (query.length < 2) return [];
+    return rooms
+      .filter(
+        (room) =>
+          room.name.toLowerCase().includes(query) ||
+          room.type.toLowerCase().includes(query),
+      )
+      .slice(0, 6);
+  }, [searchTerm]);
+
+  const shouldShowSuggestions = searchFocused && suggestions.length > 0;
+
+  const now = new Date();
+  const formattedTime = now.toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
     <html lang="de" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 text-slate-900 overflow-x-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 text-slate-900`}
       >
         <div className="relative flex min-h-screen bg-slate-100">
           {/* Overlay for mobile navigation */}
@@ -88,73 +177,159 @@ export default function RootLayout({ children }) {
 
           {/* Main Content */}
           <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-72">
-            <header className="sticky top-0 z-20 border-b border-slate-200 bg-[#c0e3ff]/80 backdrop-blur">
-              <div className="flex h-16 items-center justify-between px-4 sm:h-20 sm:px-8">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    aria-label="Navigation umschalten"
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:text-slate-900 lg:hidden"
-                    onClick={() => setSidebarOpen((prev) => !prev)}
-                  >
-                    {sidebarOpen ? (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                      >
-                        <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    ) : (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                      >
-                        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    )}
-                  </button>
-
-                  <div className="flex items-center gap-2">
+            <header className="sticky top-0 z-30 border-b border-sky-100/70 bg-[#c0e3ff]/80 backdrop-blur">
+              <div className="flex flex-col gap-4 px-4 py-4 sm:px-8">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      aria-label="Navigation umschalten"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:text-slate-900 lg:hidden"
+                      onClick={() => setSidebarOpen((prev) => !prev)}
+                    >
+                      {sidebarOpen ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                        >
+                          <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                        >
+                          <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={logo}
+                        alt="SitCheck Logo"
+                        width={48}
+                        height={48}
+                        className="hidden h-12 w-12 rounded-full bg-white object-contain p-2 shadow sm:block"
+                      />
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-slate-700">SitCheck</p>
+                        <h1 className="text-lg font-semibold text-slate-900 sm:text-2xl">Raumübersicht</h1>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hidden items-center gap-4 text-sm text-slate-600 sm:flex">
+                    <div className="text-right">
+                      <p className="font-semibold text-slate-900">DHBW Mannheim</p>
+                      <p>Letzte Aktualisierung {formattedTime} Uhr</p>
+                    </div>
                     <Image
                       src={logo}
-                      alt="SitCheck Logo"
-                      width={48}
-                      height={48}
-                      className="hidden h-12 w-12 rounded-full bg-white object-contain p-2 shadow sm:block"
+                      alt="SitCheck Logo klein"
+                      width={40}
+                      height={40}
+                      className="h-10 w-10 rounded-full bg-white object-contain p-2 shadow"
                     />
-                    <div>
-                      <p className="text-xs uppercase tracking-widest text-slate-700">SitCheck</p>
-                      <h1 className="text-lg font-semibold text-slate-900 sm:text-2xl">Bibliotheksübersicht</h1>
-                    </div>
                   </div>
                 </div>
 
-                <div className="hidden items-center gap-3 text-sm text-slate-600 sm:flex">
-                  <div className="text-right">
-                    <p className="font-semibold text-slate-900">DHBW Mannheim</p>
-                    <p>Studierendenzugänge live</p>
+                <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-wide text-slate-600">
+                  <span>Systemstatus: <span className="text-emerald-600">Online</span></span>
+                  <span className="hidden sm:inline">Standort: DHBW Learning Center · Mannheim</span>
+                </div>
+
+                <div className="relative w-full">
+                  <div className="relative mx-auto w-full max-w-2xl">
+                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sky-500">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
+                        <path
+                          d="M15.5 15.5l3.5 3.5M11 17a6 6 0 100-12 6 6 0 000 12z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                    <input
+                      type="search"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => setTimeout(() => setSearchFocused(false), 120)}
+                      placeholder="Nach Räumen, Bereichen oder Ausstattungen suchen..."
+                      className="w-full rounded-full border border-slate-200 bg-white py-3 pl-12 pr-12 text-sm text-slate-700 shadow-inner transition focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                    {searchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:text-slate-700"
+                        aria-label="Suchfeld leeren"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
+                          <path d="M7 7l10 10M17 7l-10 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    )}
+                    {shouldShowSuggestions && (
+                      <ul className="absolute left-0 right-0 top-full z-30 mt-2 max-h-64 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-2 text-sm shadow-xl">
+                        {suggestions.map((room) => (
+                          <li key={room.id}>
+                            <Link
+                              href={`/rooms/${room.id}`}
+                              onClick={() => {
+                                setSearchTerm("");
+                                setSearchFocused(false);
+                              }}
+                              className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-slate-600 transition hover:bg-slate-100"
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-slate-900">{room.name}</span>
+                                <span className="text-xs uppercase tracking-wide text-slate-500">{room.type}</span>
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                Kapazität: <span className="font-semibold text-slate-900">{room.capacity}</span>
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  <Image
-                    src={logo}
-                    alt="SitCheck Logo klein"
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 rounded-full bg-white object-contain p-2 shadow"
-                  />
                 </div>
               </div>
             </header>
 
-            <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+            <main className="flex-1 px-4 pb-24 pt-6 sm:px-8 sm:pb-12 sm:pt-10">{children}</main>
 
-            <footer className="px-4 py-6 text-center text-xs text-slate-500 sm:text-sm">
+            <footer className="px-4 pb-28 pt-6 text-center text-xs text-slate-500 sm:pb-8 sm:text-sm">
               © 2025 DHBW Germany GmbH · Coblitzallee 1-9, 68163 Mannheim
             </footer>
           </div>
+
+          {/* Mobile Bottom Navigation */}
+          <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 py-2 backdrop-blur sm:hidden">
+            <div className="mx-auto flex w-full max-w-md items-center justify-around px-6">
+              {NAV_ITEMS.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`flex flex-col items-center gap-1 text-xs font-medium transition ${active ? "text-sky-600" : "text-slate-500 hover:text-slate-700"}`}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {item.icon(active)}
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
         </div>
       </body>
     </html>
