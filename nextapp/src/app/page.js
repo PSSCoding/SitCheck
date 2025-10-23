@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BarChart,
@@ -15,6 +16,47 @@ import {
   Legend,
 } from "recharts";
 import { rooms } from "@/data/rooms";
+import { useAppData } from "@/context/AppDataContext";
+
+const CATEGORY_META = {
+  "Learning Center": {
+    gradient: "from-sky-400 via-sky-500 to-sky-600",
+    accent: "text-sky-600",
+    pieFill: "#0ea5e9",
+  },
+  Gruppenräume: {
+    gradient: "from-amber-400 via-orange-400 to-orange-500",
+    accent: "text-orange-500",
+    pieFill: "#f97316",
+  },
+  Seitenbänke: {
+    gradient: "from-emerald-400 via-teal-400 to-teal-500",
+    accent: "text-emerald-500",
+    pieFill: "#10b981",
+  },
+};
+
+const CATEGORY_RANGE_MULTIPLIERS = {
+  "Learning Center": {
+    today: 0.68,
+    week: 0.61,
+  },
+  Gruppenräume: {
+    today: 0.58,
+    week: 0.52,
+  },
+  Seitenbänke: {
+    today: 0.5,
+    week: 0.44,
+  },
+};
+
+const RANGE_OPTIONS = ["live", "today", "week"];
+const RANGE_LABELS = {
+  live: "Live",
+  today: "Heute",
+  week: "Woche",
+};
 
 const CATEGORY_META = {
   "Learning Center": {

@@ -38,6 +38,7 @@ const timelineFactors = [0.25, 0.42, 0.58, 0.74, 0.85, 0.7, 0.55, 0.38];
 export default function RoomDetailPage() {
   const { id } = useParams();
   const room = rooms.find((r) => r.id === Number(id));
+  const { favorites, toggleFavorite } = useAppData();
 
   if (!room) {
     return (
