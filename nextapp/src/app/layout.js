@@ -181,7 +181,7 @@ export default function RootLayout({ children }) {
                   alt="SitCheck Logo"
                   width={312}
                   height={96}
-                  className="h-[5rem] w-auto flex-shrink-0 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] sm:h-[6.5rem]"
+                  className="h-14 w-auto flex-shrink-0 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] sm:h-20"
                 />
                 <div className="flex flex-col justify-center">
                   <p className="text-xs uppercase tracking-wide text-slate-600">Campus Dashboard</p>
@@ -255,7 +255,7 @@ export default function RootLayout({ children }) {
                         alt="SitCheck Logo"
                         width={320}
                         height={96}
-                        className="h-[4.5rem] w-auto flex-shrink-0 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] sm:h-[5.5rem] lg:h-[6.5rem]"
+                        className="h-12 w-auto flex-shrink-0 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] sm:h-16 lg:h-20"
                         priority
                       />
                       <div className="flex flex-col justify-center leading-tight">
