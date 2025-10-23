@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Farben für die Light-Variante */
+:root {
+  --background: #f0f4f8;
+  --foreground: #1a1a1a;
+  --header-footer: #1384e0;
+  --sidebar-bg: #1384e0;
+}
+
+/* Grundstyles */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+header,
+footer {
+  background-color: var(--header-footer);
+  color: white;
+}
+
+.sidebar {
+  background-color: var(--sidebar-bg);
+  color: white;
+}
