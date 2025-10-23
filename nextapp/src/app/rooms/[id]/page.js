@@ -16,7 +16,6 @@ import {
   Cell,
 } from "recharts";
 import { rooms } from "@/data/rooms";
-import { useAppData } from "@/context/AppDataContext";
 
 const CATEGORY_META = {
   "Learning Center": {
@@ -49,7 +48,6 @@ export default function RoomDetailPage() {
     );
   }
 
-  const isFavorite = favorites.includes(room.id);
   const meta = CATEGORY_META[room.type] ?? {
     gradient: "from-slate-400 via-slate-500 to-slate-600",
     pieFill: "#38bdf8",
@@ -171,37 +169,11 @@ export default function RoomDetailPage() {
               <span className="rounded-full bg-white px-3 py-1 font-semibold text-slate-700">{availability} freie Plätze</span>
             </div>
             <div className="flex flex-wrap gap-3 text-sm">
-              <Link
-                href="/bookings/new"
-                className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-sky-600"
-              >
+              <button className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-sky-600">
                 Jetzt buchen
-              </Link>
-              <button
-                type="button"
-                onClick={() => toggleFavorite(room.id)}
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 font-semibold transition ${
-                  isFavorite
-                    ? "border-sky-500 bg-sky-50 text-sky-700"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-sky-200 hover:text-sky-700"
-                }`}
-                aria-pressed={isFavorite}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill={isFavorite ? "currentColor" : "none"}
-                  className="h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 20.25l-1.45-1.32C6.4 15.14 3.5 12.53 3.5 9.25 3.5 6.52 5.57 4.5 8.2 4.5c1.35 0 2.67.63 3.8 1.74 1.13-1.11 2.45-1.74 3.8-1.74 2.63 0 4.7 2.02 4.7 4.75 0 3.28-2.9 5.89-7.05 9.68L12 20.25z"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {isFavorite ? "Gemerkt" : "Merken"}
+              </button>
+              <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:border-sky-200 hover:text-sky-700">
+                Merken
               </button>
             </div>
           </div>
@@ -295,12 +267,9 @@ export default function RoomDetailPage() {
             <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">Freie Slots buchen</h2>
             <p className="text-sm text-slate-600">Wähle ein passendes Zeitfenster, um diesen Raum zu reservieren.</p>
           </div>
-          <Link
-            href="/bookings"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-sky-200 hover:text-sky-700"
-          >
+          <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-sky-200 hover:text-sky-700">
             Alle Buchungen ansehen
-          </Link>
+          </button>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {upcomingSlots.map((slot) => (

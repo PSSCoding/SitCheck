@@ -58,8 +58,60 @@ const RANGE_LABELS = {
   week: "Woche",
 };
 
+const CATEGORY_META = {
+  "Learning Center": {
+    gradient: "from-sky-400 via-sky-500 to-sky-600",
+    accent: "text-sky-600",
+    pieFill: "#0ea5e9",
+  },
+  Gruppenräume: {
+    gradient: "from-amber-400 via-orange-400 to-orange-500",
+    accent: "text-orange-500",
+    pieFill: "#f97316",
+  },
+  Seitenbänke: {
+    gradient: "from-emerald-400 via-teal-400 to-teal-500",
+    accent: "text-emerald-500",
+    pieFill: "#10b981",
+  },
+};
+
+const bookings = [
+  {
+    id: 1,
+    roomId: 7,
+    roomName: "Gruppenraum B",
+    category: "Gruppenräume",
+    start: "13:30",
+    end: "15:00",
+    status: "Bestätigt",
+  },
+  {
+    id: 2,
+    roomId: 3,
+    roomName: "Lesesaal 3",
+    category: "Learning Center",
+    start: "16:00",
+    end: "18:00",
+    status: "Option",
+  },
+  {
+    id: 3,
+    roomId: 11,
+    roomName: "Seitenbank 1",
+    category: "Seitenbänke",
+    start: "18:30",
+    end: "19:30",
+    status: "Bestätigt",
+  },
+];
+
+const parseTimeToMinutes = (time) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
 export default function HomePage() {
-  const { bookings, favorites, toggleFavorite } = useAppData();
   const groupedRooms = Object.entries(
     rooms.reduce((acc, room) => {
       if (!acc[room.type]) acc[room.type] = [];
@@ -67,28 +119,6 @@ export default function HomePage() {
       return acc;
     }, {}),
   );
-
-  const [rangeByCategory, setRangeByCategory] = useState(() =>
-    Object.fromEntries(groupedRooms.map(([type]) => [type, "live"])),
-  );
-
-  useEffect(() => {
-    setRangeByCategory((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      groupedRooms.forEach(([type]) => {
-        if (!next[type]) {
-          next[type] = "live";
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [groupedRooms]);
-
-  const onRangeChange = (type, option) => {
-    setRangeByCategory((prev) => ({ ...prev, [type]: option }));
-  };
 
   const totalPeople = rooms.reduce((sum, room) => sum + room.people, 0);
   const totalCapacity = rooms.reduce((sum, room) => sum + room.capacity, 0);
@@ -103,18 +133,11 @@ export default function HomePage() {
     month: "long",
   });
 
-  const upcomingBookings = useMemo(() => {
-    const now = new Date();
-    return bookings
-      .filter((booking) => new Date(booking.startDateTime) > now)
-      .sort(
-        (a, b) =>
-          new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime(),
-      );
-  }, [bookings]);
-
-  const nextBooking = upcomingBookings[0];
-  const additionalBookings = upcomingBookings.slice(1);
+  const sortedBookings = [...bookings].sort(
+    (a, b) => parseTimeToMinutes(a.start) - parseTimeToMinutes(b.start),
+  );
+  const nextBooking = sortedBookings[0];
+  const additionalBookings = sortedBookings.slice(1);
 
   const categoryTotals = groupedRooms.reduce((acc, [type, typeRooms]) => {
     const totals = typeRooms.reduce(
@@ -170,15 +193,6 @@ export default function HomePage() {
     return entry;
   });
 
-  const formatTimeRange = (startIso, endIso) => {
-    const start = new Date(startIso);
-    const end = new Date(endIso);
-    return `${start.toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    })} – ${end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`;
-  };
-
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 pb-6 sm:gap-12">
       <section className="space-y-4 sm:space-y-6">
@@ -188,49 +202,29 @@ export default function HomePage() {
               <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
                 Meine nächste Buchung
               </span>
-              {nextBooking ? (
-                <>
-                  <div>
-                    <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{nextBooking.roomName}</h1>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {formatTimeRange(nextBooking.startDateTime, nextBooking.endDateTime)} · {nextBooking.category}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                    <span className="rounded-full bg-sky-200/50 px-3 py-1 font-medium text-sky-700">Status: {nextBooking.status}</span>
-                    <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">Heute, {today}</span>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-2">
-                  <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Keine anstehenden Buchungen</h1>
-                  <p className="text-sm text-slate-600">
-                    Du hast aktuell keine reservierten Slots. Lege jetzt eine unverbindliche Anfrage für deinen Lieblingsraum an.
-                  </p>
-                </div>
-              )}
+              <div>
+                <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{nextBooking.roomName}</h1>
+                <p className="mt-1 text-sm text-slate-600">
+                  {nextBooking.start} – {nextBooking.end} Uhr · {nextBooking.category}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                <span className="rounded-full bg-sky-200/50 px-3 py-1 font-medium text-sky-700">Status: {nextBooking.status}</span>
+                <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">Heute, {today}</span>
+              </div>
             </div>
             <div className="flex flex-col gap-3 text-sm text-slate-600">
-              <Link
-                href="/bookings"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-sky-600"
-              >
-                Buchungen verwalten
+              <button className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-sky-600">
+                Buchung verwalten
                 <span aria-hidden="true">→</span>
-              </Link>
-              {!nextBooking && (
-                <Link
-                  href="/bookings/new"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2 font-semibold text-sky-700 shadow-sm transition hover:border-sky-300 hover:text-sky-800"
-                >
-                  <span aria-hidden="true">＋</span>
-                  Jetzt Raum unverbindlich buchen
-                </Link>
-              )}
+              </button>
+              <button className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:border-sky-200 hover:text-sky-700">
+                Neuen Raum suchen
+              </button>
             </div>
           </div>
 
-          {nextBooking && additionalBookings.length > 0 && (
+          {additionalBookings.length > 0 && (
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {additionalBookings.map((booking) => (
                 <div
@@ -240,7 +234,7 @@ export default function HomePage() {
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{booking.roomName}</p>
                     <p className="text-xs uppercase tracking-wide text-slate-500">
-                      {formatTimeRange(booking.startDateTime, booking.endDateTime)} · {booking.category}
+                      {booking.start} – {booking.end} Uhr · {booking.category}
                     </p>
                   </div>
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -278,24 +272,12 @@ export default function HomePage() {
             accent: "text-slate-600",
             pieFill: "#64748b",
           };
-          const activeRange = rangeByCategory[type] ?? "live";
-          const multipliers = CATEGORY_RANGE_MULTIPLIERS[type] ?? {};
-          const rangeRatio =
-            activeRange === "live"
-              ? totals.capacity
-                ? totals.people / totals.capacity
-                : 0
-              : multipliers[activeRange] ?? (totals.capacity ? totals.people / totals.capacity : 0);
-          const projectedPeople = Math.min(
-            totals.capacity,
-            Math.round((totals.capacity || 0) * rangeRatio),
-          );
           const utilization = totals.capacity
-            ? Math.round((projectedPeople / totals.capacity) * 100)
+            ? Math.round((totals.people / totals.capacity) * 100)
             : 0;
           const pieData = [
-            { name: "Belegt", value: projectedPeople },
-            { name: "Frei", value: Math.max(totals.capacity - projectedPeople, 0) },
+            { name: "Belegt", value: totals.people },
+            { name: "Frei", value: Math.max(totals.capacity - totals.people, 0) },
           ];
 
           return (
@@ -320,36 +302,21 @@ export default function HomePage() {
                   </p>
                   <div className="flex flex-wrap gap-4 text-xs text-slate-500">
                     <span>
-                      Ø {RANGE_LABELS[activeRange]}: <span className="font-semibold text-slate-900">{utilization}%</span>
+                      Belegt: <span className="font-semibold text-slate-900">{totals.people}</span>
                     </span>
                     <span>
                       Kapazität: <span className="font-semibold text-slate-900">{totals.capacity}</span>
                     </span>
                     <span>
-                      Belegt: <span className="font-semibold text-slate-900">{projectedPeople}</span>
-                    </span>
-                    <span>
-                      Frei: <span className="font-semibold text-slate-900">{Math.max(totals.capacity - projectedPeople, 0)}</span>
+                      Frei: <span className="font-semibold text-slate-900">{Math.max(totals.capacity - totals.people, 0)}</span>
                     </span>
                   </div>
                 </div>
                 <div className="flex flex-col items-center gap-4 sm:flex-row">
-                  <div className="flex items-center gap-2 rounded-full bg-white/80 p-1 text-xs font-semibold text-slate-600">
-                    {RANGE_OPTIONS.map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => onRangeChange(type, option)}
-                        className={`rounded-full px-3 py-1 transition ${
-                          activeRange === option
-                            ? "bg-slate-900 text-white shadow"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                        aria-pressed={activeRange === option}
-                      >
-                        {RANGE_LABELS[option]}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">Live</span>
+                    <span className="rounded-full px-2 py-0.5 text-slate-500">Heute</span>
+                    <span className="rounded-full px-2 py-0.5 text-slate-500">Woche</span>
                   </div>
                   <div className="relative h-28 w-28">
                     <ResponsiveContainer width="100%" height="100%">
@@ -396,49 +363,20 @@ export default function HomePage() {
                     })();
                     const utilizationRoom = Math.round((room.people / room.capacity) * 100);
 
-                    const isFavorite = favorites.includes(room.id);
-
                     return (
-                      <article
+                      <Link
+                        href={`/rooms/${room.id}`}
                         key={room.id}
-                        className="group flex min-w-[240px] snap-start flex-col gap-4 rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                        className="group flex min-w-[240px] snap-start flex-col gap-4 rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1">
                             <p className="text-xs uppercase tracking-wide text-slate-400">{room.type}</p>
                             <h3 className="text-lg font-semibold text-slate-900">{room.name}</h3>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${status.badge}`}>
-                              {status.label}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => toggleFavorite(room.id)}
-                              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                                isFavorite
-                                  ? "border-sky-500 bg-sky-500 text-white shadow"
-                                  : "border-slate-200 bg-white text-slate-600 hover:border-sky-200 hover:text-sky-700"
-                              }`}
-                              aria-pressed={isFavorite}
-                            >
-                              <svg
-                                viewBox="0 0 24 24"
-                                fill={isFavorite ? "currentColor" : "none"}
-                                className="h-4 w-4"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M12 20.25l-1.45-1.32C6.4 15.14 3.5 12.53 3.5 9.25 3.5 6.52 5.57 4.5 8.2 4.5c1.35 0 2.67.63 3.8 1.74 1.13-1.11 2.45-1.74 3.8-1.74 2.63 0 4.7 2.02 4.7 4.75 0 3.28-2.9 5.89-7.05 9.68L12 20.25z"
-                                  stroke="currentColor"
-                                  strokeWidth="1.6"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                              {isFavorite ? "Gemerkt" : "Merken"}
-                            </button>
-                          </div>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${status.badge}`}>
+                            {status.label}
+                          </span>
                         </div>
                         <div className="grid grid-cols-2 gap-3 text-xs text-slate-500">
                           <div>
@@ -466,18 +404,15 @@ export default function HomePage() {
                           />
                         </div>
                         <div className="flex items-center justify-between text-xs font-semibold text-sky-600">
-                          <Link
-                            href={`/rooms/${room.id}`}
-                            className="inline-flex items-center gap-2 transition hover:text-sky-700"
-                          >
+                          <span className="flex items-center gap-2">
                             Details ansehen
                             <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">
                               →
                             </span>
-                          </Link>
+                          </span>
                           <span className="text-slate-500">Live</span>
                         </div>
-                      </article>
+                      </Link>
                     );
                   })}
                 </div>

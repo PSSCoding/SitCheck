@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,41 +8,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import logo from "./logo.png";
 import { rooms } from "@/data/rooms";
-import { AppDataContext } from "@/context/AppDataContext";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-
-const FAVORITES_STORAGE_KEY = "sitcheck-favorites";
-const BOOKINGS_STORAGE_KEY = "sitcheck-bookings";
-
-function generateDefaultBookings() {
-  const now = new Date();
-  now.setSeconds(0, 0);
-  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0, 0);
-
-  const definitions = [
-    { id: 1, roomId: 7, offsetMinutes: 90, durationMinutes: 90, status: "Bestätigt" },
-    { id: 2, roomId: 3, offsetMinutes: 240, durationMinutes: 120, status: "Option" },
-    { id: 3, roomId: 11, offsetMinutes: 360, durationMinutes: 60, status: "Bestätigt" },
-  ];
-
-  return definitions.map((definition) => {
-    const room = rooms.find((entry) => entry.id === definition.roomId);
-    const start = new Date(base.getTime() + definition.offsetMinutes * 60 * 1000);
-    const end = new Date(start.getTime() + definition.durationMinutes * 60 * 1000);
-
-    return {
-      id: definition.id,
-      roomId: definition.roomId,
-      roomName: room?.name ?? "Unbekannter Raum",
-      category: room?.type ?? "Allgemein",
-      startDateTime: start.toISOString(),
-      endDateTime: end.toISOString(),
-      status: definition.status,
-    };
-  });
-}
 
 const NAV_ITEMS = [
   {
@@ -86,26 +54,6 @@ const NAV_ITEMS = [
     ),
   },
   {
-    label: "Favoriten",
-    href: "/favorites",
-    icon: (active) => (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className={`h-5 w-5 ${active ? "text-sky-600" : "text-slate-400"}`}
-      >
-        <path
-          d="M12 20.25l-1.45-1.32C6.4 15.14 3.5 12.53 3.5 9.25 3.5 6.52 5.57 4.5 8.2 4.5c1.35 0 2.67.63 3.8 1.74 1.13-1.11 2.45-1.74 3.8-1.74 2.63 0 4.7 2.02 4.7 4.75 0 3.28-2.9 5.89-7.05 9.68L12 20.25z"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-  },
-  {
     label: "Einstellungen",
     href: "/settings",
     icon: (active) => (
@@ -138,38 +86,6 @@ export default function RootLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
-  const [bookings, setBookings] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem(BOOKINGS_STORAGE_KEY);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            return parsed;
-          }
-        } catch (error) {
-          console.warn("Konnte gespeicherte Buchungen nicht laden:", error);
-        }
-      }
-    }
-    return generateDefaultBookings();
-  });
-  const [favorites, setFavorites] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            return parsed;
-          }
-        } catch (error) {
-          console.warn("Konnte gespeicherte Favoriten nicht laden:", error);
-        }
-      }
-    }
-    return [];
-  });
   const pathname = usePathname();
 
   useEffect(() => {
@@ -177,28 +93,6 @@ export default function RootLayout({ children }) {
     setSearchTerm("");
     setSearchFocused(false);
   }, [pathname]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(bookings));
-  }, [bookings]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
-  }, [favorites]);
-
-  const toggleFavorite = useCallback((roomId) => {
-    setFavorites((prev) =>
-      prev.includes(roomId)
-        ? prev.filter((id) => id !== roomId)
-        : [...prev, roomId],
-    );
-  }, []);
-
-  const cancelBooking = useCallback((bookingId) => {
-    setBookings((prev) => prev.filter((booking) => booking.id !== bookingId));
-  }, []);
 
   const suggestions = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -220,29 +114,17 @@ export default function RootLayout({ children }) {
     minute: "2-digit",
   });
 
-  const contextValue = useMemo(
-    () => ({
-      bookings,
-      setBookings,
-      cancelBooking,
-      favorites,
-      toggleFavorite,
-    }),
-    [bookings, cancelBooking, favorites, toggleFavorite],
-  );
-
   return (
     <html lang="de" className="scroll-smooth">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 text-slate-900`}
       >
-        <AppDataContext.Provider value={contextValue}>
-          <div className="relative flex min-h-screen bg-slate-100">
-            {/* Overlay for mobile navigation */}
-            {sidebarOpen && (
-              <div
-                className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
-                onClick={() => setSidebarOpen(false)}
+        <div className="relative flex min-h-screen bg-slate-100">
+          {/* Overlay for mobile navigation */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+              onClick={() => setSidebarOpen(false)}
             />
           )}
 
@@ -259,7 +141,7 @@ export default function RootLayout({ children }) {
                 alt="SitCheck Logo"
                 width={56}
                 height={56}
-                className="h-14 w-14 object-contain drop-shadow"
+                className="h-14 w-14 rounded-full bg-white object-contain p-2 shadow"
               />
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-600">Campus Dashboard</p>
@@ -295,7 +177,7 @@ export default function RootLayout({ children }) {
 
           {/* Main Content */}
           <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-72">
-            <header className="sticky top-0 z-30 border-b border-sky-200 bg-[#c0e3ff]">
+            <header className="sticky top-0 z-30 border-b border-sky-100/70 bg-[#c0e3ff]/80 backdrop-blur">
               <div className="flex flex-col gap-4 px-4 py-4 sm:px-8">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -331,7 +213,7 @@ export default function RootLayout({ children }) {
                         alt="SitCheck Logo"
                         width={48}
                         height={48}
-                        className="hidden h-12 w-12 object-contain drop-shadow sm:block"
+                        className="hidden h-12 w-12 rounded-full bg-white object-contain p-2 shadow sm:block"
                       />
                       <div>
                         <p className="text-xs uppercase tracking-widest text-slate-700">SitCheck</p>
@@ -349,7 +231,7 @@ export default function RootLayout({ children }) {
                       alt="SitCheck Logo klein"
                       width={40}
                       height={40}
-                      className="h-10 w-10 object-contain drop-shadow"
+                      className="h-10 w-10 rounded-full bg-white object-contain p-2 shadow"
                     />
                   </div>
                 </div>
@@ -424,13 +306,13 @@ export default function RootLayout({ children }) {
 
             <main className="flex-1 px-4 pb-24 pt-6 sm:px-8 sm:pb-12 sm:pt-10">{children}</main>
 
-            <footer className="bg-[#c0e3ff] px-4 pb-28 pt-6 text-center text-xs text-slate-700 sm:pb-8 sm:text-sm">
+            <footer className="px-4 pb-28 pt-6 text-center text-xs text-slate-500 sm:pb-8 sm:text-sm">
               © 2025 DHBW Germany GmbH · Coblitzallee 1-9, 68163 Mannheim
             </footer>
           </div>
 
           {/* Mobile Bottom Navigation */}
-          <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-sky-200 bg-[#c0e3ff] py-2 sm:hidden">
+          <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 py-2 backdrop-blur sm:hidden">
             <div className="mx-auto flex w-full max-w-md items-center justify-around px-6">
               {NAV_ITEMS.map((item) => {
                 const active = pathname === item.href;
@@ -438,7 +320,7 @@ export default function RootLayout({ children }) {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`flex flex-col items-center gap-1 text-xs font-medium transition ${active ? "text-sky-700" : "text-slate-600 hover:text-slate-800"}`}
+                    className={`flex flex-col items-center gap-1 text-xs font-medium transition ${active ? "text-sky-600" : "text-slate-500 hover:text-slate-700"}`}
                     aria-current={active ? "page" : undefined}
                   >
                     {item.icon(active)}
@@ -448,8 +330,7 @@ export default function RootLayout({ children }) {
               })}
             </div>
           </nav>
-          </div>
-        </AppDataContext.Provider>
+        </div>
       </body>
     </html>
   );
