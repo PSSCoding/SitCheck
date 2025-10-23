@@ -91,7 +91,7 @@ function FavoritesSidebarSection() {
     .slice(0, 3);
 
   return (
-    <div className="mt-8 rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner">
+    <div className="mt-8 mb-6 rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner">
       <p className="text-xs uppercase tracking-wide text-slate-600">Meine Favoriten</p>
       <div className="mt-3 space-y-2">
         {favoriteRooms.length > 0 ? (
