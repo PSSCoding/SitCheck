@@ -91,7 +91,7 @@ function FavoritesSidebarSection() {
     .slice(0, 3);
 
   return (
-    <div className="mt-8 mb-6 rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner">
+    <div className="mt-8 rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner">
       <p className="text-xs uppercase tracking-wide text-slate-600">Meine Favoriten</p>
       <div className="mt-3 space-y-2">
         {favoriteRooms.length > 0 ? (
@@ -179,9 +179,9 @@ export default function RootLayout({ children }) {
                 <Image
                   src={logo}
                   alt="SitCheck Logo"
-                  width={156}
-                  height={48}
-                  className="h-12 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
+                  width={56}
+                  height={56}
+                  className="h-14 w-14 rounded-full bg-white object-contain p-2 shadow"
                 />
                 <div>
                   <p className="text-xs uppercase tracking-wide text-slate-600">Campus Dashboard</p>
