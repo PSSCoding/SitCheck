@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   BarChart,
@@ -58,60 +58,17 @@ const RANGE_LABELS = {
   week: "Woche",
 };
 
-const CATEGORY_META = {
-  "Learning Center": {
-    gradient: "from-sky-400 via-sky-500 to-sky-600",
-    accent: "text-sky-600",
-    pieFill: "#0ea5e9",
-  },
-  Gruppenräume: {
-    gradient: "from-amber-400 via-orange-400 to-orange-500",
-    accent: "text-orange-500",
-    pieFill: "#f97316",
-  },
-  Seitenbänke: {
-    gradient: "from-emerald-400 via-teal-400 to-teal-500",
-    accent: "text-emerald-500",
-    pieFill: "#10b981",
-  },
-};
-
-const bookings = [
-  {
-    id: 1,
-    roomId: 7,
-    roomName: "Gruppenraum B",
-    category: "Gruppenräume",
-    start: "13:30",
-    end: "15:00",
-    status: "Bestätigt",
-  },
-  {
-    id: 2,
-    roomId: 3,
-    roomName: "Lesesaal 3",
-    category: "Learning Center",
-    start: "16:00",
-    end: "18:00",
-    status: "Option",
-  },
-  {
-    id: 3,
-    roomId: 11,
-    roomName: "Seitenbank 1",
-    category: "Seitenbänke",
-    start: "18:30",
-    end: "19:30",
-    status: "Bestätigt",
-  },
-];
-
 const parseTimeToMinutes = (time) => {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
 };
 
+const formatTimeLabel = (isoString) =>
+  new Date(isoString).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+
 export default function HomePage() {
+  const { bookings } = useAppData();
+
   const groupedRooms = Object.entries(
     rooms.reduce((acc, room) => {
       if (!acc[room.type]) acc[room.type] = [];
@@ -133,11 +90,35 @@ export default function HomePage() {
     month: "long",
   });
 
-  const sortedBookings = [...bookings].sort(
-    (a, b) => parseTimeToMinutes(a.start) - parseTimeToMinutes(b.start),
+  const normalizedBookings = useMemo(() => {
+    const now = new Date();
+    return bookings
+      .filter((booking) => new Date(booking.endDateTime) >= now)
+      .map((booking) => ({
+        ...booking,
+        start: formatTimeLabel(booking.startDateTime),
+        end: formatTimeLabel(booking.endDateTime),
+      }));
+  }, [bookings]);
+
+  const sortedBookings = useMemo(
+    () =>
+      [...normalizedBookings].sort(
+        (a, b) => parseTimeToMinutes(a.start) - parseTimeToMinutes(b.start),
+      ),
+    [normalizedBookings],
   );
   const nextBooking = sortedBookings[0];
   const additionalBookings = sortedBookings.slice(1);
+  const hasUpcomingBooking = Boolean(nextBooking);
+  const nextBookingDateLabel = useMemo(() => {
+    if (!nextBooking) return "";
+    return new Date(nextBooking.startDateTime).toLocaleDateString("de-DE", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+  }, [nextBooking]);
 
   const categoryTotals = groupedRooms.reduce((acc, [type, typeRooms]) => {
     const totals = typeRooms.reduce(
@@ -197,51 +178,78 @@ export default function HomePage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 pb-6 sm:gap-12">
       <section className="space-y-4 sm:space-y-6">
         <div className="rounded-4xl bg-gradient-to-br from-sky-100 via-sky-50 to-white p-6 shadow-sm ring-1 ring-sky-100 sm:p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
-                Meine nächste Buchung
-              </span>
-              <div>
-                <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{nextBooking.roomName}</h1>
-                <p className="mt-1 text-sm text-slate-600">
-                  {nextBooking.start} – {nextBooking.end} Uhr · {nextBooking.category}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                <span className="rounded-full bg-sky-200/50 px-3 py-1 font-medium text-sky-700">Status: {nextBooking.status}</span>
-                <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">Heute, {today}</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3 text-sm text-slate-600">
-              <button className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-sky-600">
-                Buchung verwalten
-                <span aria-hidden="true">→</span>
-              </button>
-              <button className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:border-sky-200 hover:text-sky-700">
-                Neuen Raum suchen
-              </button>
-            </div>
-          </div>
-
-          {additionalBookings.length > 0 && (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {additionalBookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-600 shadow-inner"
-                >
+          {hasUpcomingBooking ? (
+            <>
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-3">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
+                    Meine nächste Buchung
+                  </span>
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{booking.roomName}</p>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      {booking.start} – {booking.end} Uhr · {booking.category}
+                    <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{nextBooking.roomName}</h1>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {nextBooking.start} – {nextBooking.end} Uhr · {nextBooking.category}
                     </p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                    {booking.status}
-                  </span>
+                  <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                    <span className="rounded-full bg-sky-200/50 px-3 py-1 font-medium text-sky-700">Status: {nextBooking.status}</span>
+                    <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">{nextBookingDateLabel}</span>
+                  </div>
                 </div>
-              ))}
+                <div className="flex flex-col gap-3 text-sm text-slate-600">
+                  <Link
+                    href="/bookings"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-sky-600"
+                  >
+                    Buchung verwalten
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                  <Link
+                    href="/bookings/new"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm transition hover:border-sky-200 hover:text-sky-700"
+                  >
+                    Neuen Raum suchen
+                  </Link>
+                </div>
+              </div>
+
+              {additionalBookings.length > 0 && (
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {additionalBookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-600 shadow-inner"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{booking.roomName}</p>
+                        <p className="text-xs uppercase tracking-wide text-slate-500">
+                          {booking.start} – {booking.end} Uhr · {booking.category}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                        {booking.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-4 text-center text-slate-600">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
+                Keine offenen Buchungen
+              </span>
+              <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">Starte deine erste Reservierung</h2>
+              <p className="max-w-md text-sm">
+                Aktuell sind keine Buchungen geplant. Du kannst jederzeit einen Raum auswählen und eine Anfrage anlegen.
+              </p>
+              <Link
+                href="/bookings/new"
+                className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-sky-600"
+              >
+                Jetzt unverbindlich buchen
+                <span aria-hidden="true">→</span>
+              </Link>
             </div>
           )}
         </div>
