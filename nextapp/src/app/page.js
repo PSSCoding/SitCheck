@@ -7,7 +7,7 @@ import { rooms } from "@/data/rooms";
 import { useAppData } from "@/context/AppDataContext";
 
 const CATEGORY_META = {
-  "Learning Center": {
+  "Lesesäle": {
     gradient: "from-sky-400 via-sky-500 to-sky-600",
     accent: "text-sky-600",
     pieFill: "#0ea5e9",
@@ -25,7 +25,7 @@ const CATEGORY_META = {
 };
 
 const CATEGORY_RANGE_MULTIPLIERS = {
-  "Learning Center": {
+  "Lesesäle": {
     today: 0.68,
     tomorrow: 0.54,
   },
@@ -256,7 +256,7 @@ export default function HomePage() {
                     </span>
                   </div>
                   <p className="text-sm text-slate-600">
-                    Aggregierte Auslastung aller {type.toLowerCase()} im Überblick.
+                    Aggregierte Auslastung aller {type} im Überblick.
                   </p>
                     <div className="flex flex-wrap gap-4 text-xs text-slate-500">
                       <span>

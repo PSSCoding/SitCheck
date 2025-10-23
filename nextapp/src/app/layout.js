@@ -281,7 +281,7 @@ export default function RootLayout({ children }) {
 
                 <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-wide text-slate-600">
                   <span>Systemstatus: <span className="text-emerald-600">Online</span></span>
-                  <span className="hidden sm:inline">Standort: DHBW Learning Center · Mannheim</span>
+                  <span className="hidden sm:inline">Standort: DHBW Lesesaal · Mannheim</span>
                 </div>
 
                 <div className="relative w-full">
