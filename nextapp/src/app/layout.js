@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="de" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 text-slate-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 text-slate-900 overflow-x-hidden`}
       >
         <div className="relative flex min-h-screen bg-slate-100">
           {/* Overlay for mobile navigation */}
