@@ -1,127 +1,455 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import logo from "./logo.png";
+import { rooms } from "@/data/rooms";
+import { AppDataContext } from "@/context/AppDataContext";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-export default function RootLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+const FAVORITES_STORAGE_KEY = "sitcheck-favorites";
+const BOOKINGS_STORAGE_KEY = "sitcheck-bookings";
 
-  const navItems = [
-    { label: "Dashboard", href: "/" },
-    { label: "Buchungen", href: "/bookings" },
-    { label: "Einstellungen", href: "/settings" },
+function generateDefaultBookings() {
+  const now = new Date();
+  now.setSeconds(0, 0);
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0, 0);
+
+  const definitions = [
+    { id: 1, roomId: 7, offsetMinutes: 90, durationMinutes: 90, status: "Bestätigt" },
+    { id: 2, roomId: 3, offsetMinutes: 240, durationMinutes: 120, status: "Option" },
+    { id: 3, roomId: 11, offsetMinutes: 360, durationMinutes: 60, status: "Bestätigt" },
   ];
 
-  return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900`}
+  return definitions.map((definition) => {
+    const room = rooms.find((entry) => entry.id === definition.roomId);
+    const start = new Date(base.getTime() + definition.offsetMinutes * 60 * 1000);
+    const end = new Date(start.getTime() + definition.durationMinutes * 60 * 1000);
+
+    return {
+      id: definition.id,
+      roomId: definition.roomId,
+      roomName: room?.name ?? "Unbekannter Raum",
+      category: room?.type ?? "Allgemein",
+      startDateTime: start.toISOString(),
+      endDateTime: end.toISOString(),
+      status: definition.status,
+    };
+  });
+}
+
+const NAV_ITEMS = [
+  {
+    label: "Dashboard",
+    href: "/",
+    icon: (active) => (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-5 w-5 ${active ? "text-sky-600" : "text-slate-400"}`}
       >
-        <div className="flex min-h-screen">
+        <path
+          d="M4.5 11a7.5 7.5 0 1115 0v8.25a.75.75 0 01-.75.75h-4.5v-5.25a1.5 1.5 0 00-1.5-1.5h-1.5a1.5 1.5 0 00-1.5 1.5V20H5.25a.75.75 0 01-.75-.75V11z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    label: "Buchungen",
+    href: "/bookings",
+    icon: (active) => (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-5 w-5 ${active ? "text-sky-600" : "text-slate-400"}`}
+      >
+        <path
+          d="M6.5 5.5a2 2 0 012-2h7a2 2 0 012 2v15l-5.5-2.75L6.5 20.5v-15z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    label: "Favoriten",
+    href: "/favorites",
+    icon: (active) => (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-5 w-5 ${active ? "text-sky-600" : "text-slate-400"}`}
+      >
+        <path
+          d="M12 20.25l-1.45-1.32C6.4 15.14 3.5 12.53 3.5 9.25 3.5 6.52 5.57 4.5 8.2 4.5c1.35 0 2.67.63 3.8 1.74 1.13-1.11 2.45-1.74 3.8-1.74 2.63 0 4.7 2.02 4.7 4.75 0 3.28-2.9 5.89-7.05 9.68L12 20.25z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    label: "Einstellungen",
+    href: "/settings",
+    icon: (active) => (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-5 w-5 ${active ? "text-sky-600" : "text-slate-400"}`}
+      >
+        <path
+          d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M19.4 13.5a7.5 7.5 0 00.05-3l1.75-1.32a.75.75 0 00.2-.95l-1.66-2.88a.75.75 0 00-.9-.35l-2.05.68a7.55 7.55 0 00-2.6-1.5l-.32-2.15A.75.75 0 0013.12 1h-2.24a.75.75 0 00-.74.64l-.32 2.15a7.55 7.55 0 00-2.6 1.5L5.17 4.01a.75.75 0 00-.9.35L2.6 7.24a.75.75 0 00.2.95L4.55 9.5a7.5 7.5 0 000 3l-1.75 1.32a.75.75 0 00-.2.95l1.66 2.88a.75.75 0 00.9.35l2.05-.68a7.55 7.55 0 002.6 1.5l.32 2.15a.75.75 0 00.74.64h2.24a.75.75 0 00.74-.64l.32-2.15a7.55 7.55 0 002.6-1.5l2.05.68a.75.75 0 00.9-.35l1.66-2.88a.75.75 0 00-.2-.95L19.4 13.5z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+];
+
+export default function RootLayout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [bookings, setBookings] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(BOOKINGS_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (error) {
+          console.warn("Konnte gespeicherte Buchungen nicht laden:", error);
+        }
+      }
+    }
+    return generateDefaultBookings();
+  });
+  const [favorites, setFavorites] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (error) {
+          console.warn("Konnte gespeicherte Favoriten nicht laden:", error);
+        }
+      }
+    }
+    return [];
+  });
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setSidebarOpen(false);
+    setSearchTerm("");
+    setSearchFocused(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(bookings));
+  }, [bookings]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = useCallback((roomId) => {
+    setFavorites((prev) =>
+      prev.includes(roomId)
+        ? prev.filter((id) => id !== roomId)
+        : [...prev, roomId],
+    );
+  }, []);
+
+  const cancelBooking = useCallback((bookingId) => {
+    setBookings((prev) => prev.filter((booking) => booking.id !== bookingId));
+  }, []);
+
+  const suggestions = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (query.length < 2) return [];
+    return rooms
+      .filter(
+        (room) =>
+          room.name.toLowerCase().includes(query) ||
+          room.type.toLowerCase().includes(query),
+      )
+      .slice(0, 6);
+  }, [searchTerm]);
+
+  const shouldShowSuggestions = searchFocused && suggestions.length > 0;
+
+  const now = new Date();
+  const formattedTime = now.toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const contextValue = useMemo(
+    () => ({
+      bookings,
+      setBookings,
+      cancelBooking,
+      favorites,
+      toggleFavorite,
+    }),
+    [bookings, cancelBooking, favorites, toggleFavorite],
+  );
+
+  return (
+    <html lang="de" className="scroll-smooth">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-100 text-slate-900`}
+      >
+        <AppDataContext.Provider value={contextValue}>
+          <div className="relative flex min-h-screen bg-slate-100">
+            {/* Overlay for mobile navigation */}
+            {sidebarOpen && (
+              <div
+                className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+                onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
           {/* Sidebar */}
           <aside
-            className={`fixed top-0 left-0 h-full text-black p-4 transform transition-transform duration-300 z-40
-              ${sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
-            style={{ backgroundColor: "#c0e3ff" }}
+            className={`fixed top-0 left-0 z-40 flex h-full w-72 transform flex-col border-r border-slate-200
+              bg-[#c0e3ff] px-5 py-6 text-slate-900 shadow-xl transition-transform duration-300
+              ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+              lg:relative lg:translate-x-0 lg:shadow-none`}
           >
-            {/* Sidebar Logo + Titel */}
-            <div className="flex items-center mb-6">
-              <Image src={logo} alt="SitCheck Logo" width={120} height={120} />
-              <h2 className="text-xl font-bold ml-2 text-black">SitCheck</h2>
+            <div className="flex items-center gap-3">
+              <Image
+                src={logo}
+                alt="SitCheck Logo"
+                width={56}
+                height={56}
+                className="h-14 w-14 object-contain drop-shadow"
+              />
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-600">Campus Dashboard</p>
+                <h2 className="text-xl font-semibold text-slate-900">SitCheck</h2>
+              </div>
             </div>
 
-            <nav className="space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="block px-3 py-2 rounded transition-colors duration-200"
-                  style={{ backgroundColor: "transparent", color: "black" }}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#9fd4ff")
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor = "transparent")
-                  }
-                >
-                  {item.label}
-                </Link>
-              ))}
+            <nav className="mt-8 space-y-1 text-sm font-medium">
+              {NAV_ITEMS.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 transition-colors
+                      ${active ? "bg-white text-slate-900 shadow" : "text-slate-700 hover:bg-white/70"}`}
+                  >
+                    <span>{item.label}</span>
+                    {active && (
+                      <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden="true" />
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
+
+            <div className="mt-auto rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner">
+              <p className="font-semibold text-slate-900">Öffnungszeiten</p>
+              <p>Mo–Fr: 08:00–22:00</p>
+              <p>Sa: 09:00–18:00</p>
+            </div>
           </aside>
 
           {/* Main Content */}
-          <div
-            className={`flex-1 min-h-screen transition-all duration-300 
-              ${sidebarOpen ? "ml-64" : "ml-0"}`}
-          >
-            {/* Header */}
-           <header
-  className="relative flex items-center p-4 shadow-md"
-  style={{ backgroundColor: "#c0e3ff", height: "6rem" }}
->
-  {/* Linke Seite: Hamburger + Logo + Titel */}
-  <div className="flex items-center gap-4 z-10">
-    <button
-      onClick={() => setSidebarOpen(!sidebarOpen)}
-      className="flex items-center justify-center bg-transparent border-0 appearance-none focus:outline-none"
-    >
-      {sidebarOpen ? (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="black"
-          strokeWidth="3"
-          className="w-6 h-6"
-        >
-          <line x1="4" y1="4" x2="20" y2="20" />
-          <line x1="20" y1="4" x2="4" y2="20" />
-        </svg>
-      ) : (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="black"
-          strokeWidth="3"
-          className="w-6 h-6"
-        >
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
-      )}
-    </button>
+          <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-72">
+            <header className="sticky top-0 z-30 border-b border-sky-200 bg-[#c0e3ff]">
+              <div className="flex flex-col gap-4 px-4 py-4 sm:px-8">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      aria-label="Navigation umschalten"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:text-slate-900 lg:hidden"
+                      onClick={() => setSidebarOpen((prev) => !prev)}
+                    >
+                      {sidebarOpen ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                        >
+                          <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                        >
+                          <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <Image
+                        src={logo}
+                        alt="SitCheck Logo"
+                        width={48}
+                        height={48}
+                        className="hidden h-12 w-12 object-contain drop-shadow sm:block"
+                      />
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-slate-700">SitCheck</p>
+                        <h1 className="text-lg font-semibold text-slate-900 sm:text-2xl">Raumübersicht</h1>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hidden items-center gap-4 text-sm text-slate-600 sm:flex">
+                    <div className="text-right">
+                      <p className="font-semibold text-slate-900">DHBW Mannheim</p>
+                      <p>Letzte Aktualisierung {formattedTime} Uhr</p>
+                    </div>
+                    <Image
+                      src={logo}
+                      alt="SitCheck Logo klein"
+                      width={40}
+                      height={40}
+                      className="h-10 w-10 object-contain drop-shadow"
+                    />
+                  </div>
+                </div>
 
-    {/* Logo links vom Titel */}
-    <Image
-      src={logo}
-      alt="SitCheck Logo"
-      width={120}
-      height={120}
-      className="object-contain"
-    />
+                <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-wide text-slate-600">
+                  <span>Systemstatus: <span className="text-emerald-600">Online</span></span>
+                  <span className="hidden sm:inline">Standort: DHBW Learning Center · Mannheim</span>
+                </div>
 
-    <h1 className="text-2xl font-bold text-black">SitCheck</h1>
-  </div>
-</header>
+                <div className="relative w-full">
+                  <div className="relative mx-auto w-full max-w-2xl">
+                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sky-500">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
+                        <path
+                          d="M15.5 15.5l3.5 3.5M11 17a6 6 0 100-12 6 6 0 000 12z"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                    <input
+                      type="search"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => setTimeout(() => setSearchFocused(false), 120)}
+                      placeholder="Nach Räumen, Bereichen oder Ausstattungen suchen..."
+                      className="w-full rounded-full border border-slate-200 bg-white py-3 pl-12 pr-12 text-sm text-slate-700 shadow-inner transition focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                    {searchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:text-slate-700"
+                        aria-label="Suchfeld leeren"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
+                          <path d="M7 7l10 10M17 7l-10 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    )}
+                    {shouldShowSuggestions && (
+                      <ul className="absolute left-0 right-0 top-full z-30 mt-2 max-h-64 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-2 text-sm shadow-xl">
+                        {suggestions.map((room) => (
+                          <li key={room.id}>
+                            <Link
+                              href={`/rooms/${room.id}`}
+                              onClick={() => {
+                                setSearchTerm("");
+                                setSearchFocused(false);
+                              }}
+                              className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-slate-600 transition hover:bg-slate-100"
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-slate-900">{room.name}</span>
+                                <span className="text-xs uppercase tracking-wide text-slate-500">{room.type}</span>
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                Kapazität: <span className="font-semibold text-slate-900">{room.capacity}</span>
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </header>
 
-            <main className="p-8">{children}</main>
+            <main className="flex-1 px-4 pb-24 pt-6 sm:px-8 sm:pb-12 sm:pt-10">{children}</main>
 
-            <footer
-              className="p-4 text-center"
-              style={{ backgroundColor: "#c0e3ff", color: "black" }}
-            >
-              © 2025 DHBW Germany GmbH Coblitzallee 1-9, 68163 Mannheim
+            <footer className="bg-[#c0e3ff] px-4 pb-28 pt-6 text-center text-xs text-slate-700 sm:pb-8 sm:text-sm">
+              © 2025 DHBW Germany GmbH · Coblitzallee 1-9, 68163 Mannheim
             </footer>
           </div>
-        </div>
+
+          {/* Mobile Bottom Navigation */}
+          <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-sky-200 bg-[#c0e3ff] py-2 sm:hidden">
+            <div className="mx-auto flex w-full max-w-md items-center justify-around px-6">
+              {NAV_ITEMS.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`flex flex-col items-center gap-1 text-xs font-medium transition ${active ? "text-sky-700" : "text-slate-600 hover:text-slate-800"}`}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {item.icon(active)}
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+          </div>
+        </AppDataContext.Provider>
       </body>
     </html>
   );
