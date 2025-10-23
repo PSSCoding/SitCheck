@@ -1,25 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { rooms } from "@/data/rooms";
 import { useAppData } from "@/context/AppDataContext";
 
 const CATEGORY_META = {
-  "Learning Center": {
+  "Lesesäle": {
     gradient: "from-sky-400 via-sky-500 to-sky-600",
     accent: "text-sky-600",
     pieFill: "#0ea5e9",
@@ -37,25 +25,25 @@ const CATEGORY_META = {
 };
 
 const CATEGORY_RANGE_MULTIPLIERS = {
-  "Learning Center": {
+  "Lesesäle": {
     today: 0.68,
-    week: 0.61,
+    tomorrow: 0.54,
   },
   Gruppenräume: {
     today: 0.58,
-    week: 0.52,
+    tomorrow: 0.48,
   },
   Seitenbänke: {
     today: 0.5,
-    week: 0.44,
+    tomorrow: 0.36,
   },
 };
 
-const RANGE_OPTIONS = ["live", "today", "week"];
+const RANGE_OPTIONS = ["live", "today", "tomorrow"];
 const RANGE_LABELS = {
   live: "Live",
   today: "Heute",
-  week: "Woche",
+  tomorrow: "Morgen",
 };
 
 const parseTimeToMinutes = (time) => {
@@ -68,6 +56,7 @@ const formatTimeLabel = (isoString) =>
 
 export default function HomePage() {
   const { bookings } = useAppData();
+  const [selectedRanges, setSelectedRanges] = useState({});
 
   const groupedRooms = Object.entries(
     rooms.reduce((acc, room) => {
@@ -83,12 +72,6 @@ export default function HomePage() {
   const averageUtilization = totalCapacity
     ? Math.round((totalPeople / totalCapacity) * 100)
     : 0;
-
-  const today = new Date().toLocaleDateString("de-DE", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
 
   const normalizedBookings = useMemo(() => {
     const now = new Date();
@@ -132,47 +115,6 @@ export default function HomePage() {
     acc[type] = totals;
     return acc;
   }, {});
-
-  const timeSlots = [
-    "08:00",
-    "09:00",
-    "10:00",
-    "11:00",
-    "12:00",
-    "13:00",
-    "14:00",
-    "15:00",
-    "16:00",
-    "17:00",
-    "18:00",
-    "19:00",
-    "20:00",
-  ];
-
-  const forecastFactors = [
-    0.22,
-    0.35,
-    0.48,
-    0.58,
-    0.73,
-    0.82,
-    0.88,
-    0.8,
-    0.74,
-    0.62,
-    0.5,
-    0.42,
-    0.3,
-  ];
-
-  const forecastData = timeSlots.map((time, index) => {
-    const entry = { time };
-    groupedRooms.forEach(([type]) => {
-      const capacity = categoryTotals[type]?.capacity ?? 0;
-      entry[type] = Math.round(capacity * forecastFactors[index]);
-    });
-    return entry;
-  });
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 pb-6 sm:gap-12">
@@ -280,12 +222,20 @@ export default function HomePage() {
             accent: "text-slate-600",
             pieFill: "#64748b",
           };
+          const activeRange = selectedRanges[type] ?? "live";
+          const multiplier = CATEGORY_RANGE_MULTIPLIERS[type]?.[activeRange] ?? 0.6;
+          const projectedOccupied =
+            activeRange === "live"
+              ? totals.people
+              : Math.round(totals.capacity * multiplier);
+          const occupiedSeats = Math.min(projectedOccupied, totals.capacity);
+          const freeSeatsRange = Math.max(totals.capacity - occupiedSeats, 0);
           const utilization = totals.capacity
-            ? Math.round((totals.people / totals.capacity) * 100)
+            ? Math.round((occupiedSeats / totals.capacity) * 100)
             : 0;
           const pieData = [
-            { name: "Belegt", value: totals.people },
-            { name: "Frei", value: Math.max(totals.capacity - totals.people, 0) },
+            { name: "Belegt", value: occupiedSeats },
+            { name: "Frei", value: freeSeatsRange },
           ];
 
           return (
@@ -306,29 +256,49 @@ export default function HomePage() {
                     </span>
                   </div>
                   <p className="text-sm text-slate-600">
-                    Aggregierte Auslastung aller {type.toLowerCase()} im Überblick.
+                    Aggregierte Auslastung aller {type} im Überblick.
                   </p>
-                  <div className="flex flex-wrap gap-4 text-xs text-slate-500">
-                    <span>
-                      Belegt: <span className="font-semibold text-slate-900">{totals.people}</span>
-                    </span>
-                    <span>
-                      Kapazität: <span className="font-semibold text-slate-900">{totals.capacity}</span>
-                    </span>
-                    <span>
-                      Frei: <span className="font-semibold text-slate-900">{Math.max(totals.capacity - totals.people, 0)}</span>
-                    </span>
+                    <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+                      <span>
+                        Belegt: <span className="font-semibold text-slate-900">{occupiedSeats}</span>
+                      </span>
+                      <span>
+                        Kapazität: <span className="font-semibold text-slate-900">{totals.capacity}</span>
+                      </span>
+                      <span>
+                        Frei: <span className="font-semibold text-slate-900">{freeSeatsRange}</span>
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col items-center gap-4 sm:flex-row">
-                  <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">Live</span>
-                    <span className="rounded-full px-2 py-0.5 text-slate-500">Heute</span>
-                    <span className="rounded-full px-2 py-0.5 text-slate-500">Woche</span>
-                  </div>
-                  <div className="relative h-28 w-28">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                  <div className="flex flex-col items-center gap-4 sm:flex-row">
+                    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-600">
+                      {RANGE_OPTIONS.map((range) => {
+                        const isActive = activeRange === range;
+                        return (
+                          <button
+                            key={range}
+                            type="button"
+                            onClick={() =>
+                              setSelectedRanges((prev) => ({
+                                ...prev,
+                                [type]: range,
+                              }))
+                            }
+                            className={`rounded-full px-2.5 py-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
+                              isActive
+                                ? "bg-sky-500 text-white shadow-sm"
+                                : "text-slate-500 hover:text-slate-700"
+                            }`}
+                            aria-pressed={isActive}
+                          >
+                            {RANGE_LABELS[range]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="relative h-28 w-28">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
                         <Pie
                           data={pieData}
                           dataKey="value"
@@ -418,7 +388,7 @@ export default function HomePage() {
                               →
                             </span>
                           </span>
-                          <span className="text-slate-500">Live</span>
+                          <span className="text-slate-500">{RANGE_LABELS[activeRange]}</span>
                         </div>
                       </Link>
                     );
@@ -430,38 +400,6 @@ export default function HomePage() {
         })}
       </section>
 
-      <section className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">Auslastungsprognose nach Bereichen</h2>
-            <p className="text-sm text-slate-600">
-              Geschätzte Besucherzahlen im Tagesverlauf – aggregiert nach Raumtyp.
-            </p>
-          </div>
-          <span className="text-xs uppercase tracking-wide text-slate-400">Stand: {today}</span>
-        </div>
-        <div className="mt-6 h-72 w-full sm:h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={forecastData} stackOffset="expand" margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="time" stroke="#64748b" />
-              <YAxis stroke="#64748b" tickFormatter={(value) => `${Math.round(value)}%`} domain={[0, 1]} />
-              <Tooltip
-                formatter={(value, name, props) => {
-                  const capacity = categoryTotals[name]?.capacity ?? 0;
-                  return `${Math.round(value * capacity)} Personen`;
-                }}
-                labelFormatter={(label) => `${label} Uhr`}
-                contentStyle={{ borderRadius: 12, borderColor: "#e2e8f0" }}
-              />
-              <Legend wrapperStyle={{ paddingTop: 16 }} />
-              {groupedRooms.map(([type]) => (
-                <Bar key={type} dataKey={type} stackId="categories" fill={CATEGORY_META[type]?.pieFill ?? "#94a3b8"} radius={[6, 6, 0, 0]} />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
     </div>
   );
 }
