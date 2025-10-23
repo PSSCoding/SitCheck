@@ -70,7 +70,7 @@ export default function NewBookingPage() {
       <div className="space-y-3">
         <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Unverbindliche Buchung anlegen</h1>
         <p className="text-sm text-slate-600">
-          Reserviere dir einen Raum im Learning Center für einen gewünschten Zeitraum. Die Anfrage wird lokal gespeichert und kann später an das Backend übergeben werden.
+          Reserviere dir einen Raum im Lesesaal für einen gewünschten Zeitraum. Die Anfrage wird lokal gespeichert und kann später an das Backend übergeben werden.
         </p>
         <div className="flex flex-wrap gap-2 text-xs text-slate-500">
           <span className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 font-semibold text-sky-700">

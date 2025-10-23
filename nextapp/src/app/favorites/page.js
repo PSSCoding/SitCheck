@@ -6,7 +6,7 @@ import { rooms } from "@/data/rooms";
 import { useAppData } from "@/context/AppDataContext";
 
 const CATEGORY_COLORS = {
-  "Learning Center": "from-sky-400 via-sky-500 to-sky-600",
+  "Lesesäle": "from-sky-400 via-sky-500 to-sky-600",
   Gruppenräume: "from-amber-400 via-orange-400 to-orange-500",
   Seitenbänke: "from-emerald-400 via-teal-400 to-teal-500",
 };

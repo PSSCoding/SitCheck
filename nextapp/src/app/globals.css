@@ -4,8 +4,8 @@
 :root {
   --background: #f0f4f8;
   --foreground: #1a1a1a;
-  --header-footer: #1384e0;
-  --sidebar-bg: #1384e0;
+  --header-footer: #c0e3ff;
+  --sidebar-bg: #c0e3ff;
 }
 
 /* Grundstyles */
@@ -18,7 +18,6 @@ body {
 header,
 footer {
   background-color: var(--header-footer);
-  color: white;
 }
 
 .sidebar {

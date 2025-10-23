@@ -8,7 +8,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import logo from "./logo.png";
 import { rooms } from "@/data/rooms";
-import { AppDataProvider } from "@/context/AppDataContext";
+import { AppDataProvider, useAppData } from "@/context/AppDataContext";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -83,6 +83,44 @@ const NAV_ITEMS = [
   },
 ];
 
+function FavoritesSidebarSection() {
+  const { favorites } = useAppData();
+
+  const favoriteRooms = rooms
+    .filter((room) => favorites.includes(room.id))
+    .slice(0, 3);
+
+  return (
+    <div className="mt-8 mb-6 rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner">
+      <p className="text-xs uppercase tracking-wide text-slate-600">Meine Favoriten</p>
+      <div className="mt-3 space-y-2">
+        {favoriteRooms.length > 0 ? (
+          favoriteRooms.map((room) => (
+            <div
+              key={room.id}
+              className="flex items-center justify-between rounded-xl bg-white/60 px-3 py-2 text-xs text-slate-600"
+            >
+              <span className="font-semibold text-slate-900">{room.name}</span>
+              <span className="text-[11px] uppercase tracking-wide text-slate-500">
+                {room.type}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-slate-500">Noch keine Favoriten gespeichert.</p>
+        )}
+      </div>
+      <Link
+        href="/favorites"
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600"
+      >
+        Zu meinen Favoriten
+        <span aria-hidden="true">→</span>
+      </Link>
+    </div>
+  );
+}
+
 export default function RootLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -137,52 +175,54 @@ export default function RootLayout({ children }) {
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
                 lg:relative lg:translate-x-0 lg:shadow-none`}
             >
-              <div className="flex items-center gap-3">
-              <Image
-                src={logo}
-                alt="SitCheck Logo"
-                width={56}
-                height={56}
-                className="h-14 w-14 rounded-full bg-white object-contain p-2 shadow"
-              />
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-600">Campus Dashboard</p>
-                <h2 className="text-xl font-semibold text-slate-900">SitCheck</h2>
+              <div className="flex items-center gap-4">
+                <Image
+                  src={logo}
+                  alt="SitCheck Logo"
+                  width={312}
+                  height={96}
+                  className="h-[5rem] w-auto flex-shrink-0 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] sm:h-[6.5rem]"
+                />
+                <div className="flex flex-col justify-center">
+                  <p className="text-xs uppercase tracking-wide text-slate-600">Campus Dashboard</p>
+                  <h2 className="text-xl font-semibold text-slate-900">SitCheck</h2>
+                </div>
               </div>
-            </div>
 
-            <nav className="mt-8 space-y-1 text-sm font-medium">
-              {NAV_ITEMS.map((item) => {
-                const active = pathname === item.href;
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`flex items-center justify-between rounded-xl px-4 py-3 transition-colors
-                      ${active ? "bg-white text-slate-900 shadow" : "text-slate-700 hover:bg-white/70"}`}
-                  >
-                    <span>{item.label}</span>
-                    {active && (
-                      <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden="true" />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
+              <nav className="mt-8 space-y-1 text-sm font-medium">
+                {NAV_ITEMS.map((item) => {
+                  const active = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`flex items-center justify-between rounded-xl px-4 py-3 transition-colors
+                        ${active ? "bg-white text-slate-900 shadow" : "text-slate-700 hover:bg-white/70"}`}
+                    >
+                      <span>{item.label}</span>
+                      {active && (
+                        <span className="h-2 w-2 rounded-full bg-sky-500" aria-hidden="true" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
 
-            <div className="mt-auto rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner">
-              <p className="font-semibold text-slate-900">Öffnungszeiten</p>
-              <p>Mo–Fr: 08:00–22:00</p>
-              <p>Sa: 09:00–18:00</p>
-            </div>
-          </aside>
+              <FavoritesSidebarSection />
 
-          {/* Main Content */}
+              <div className="mt-auto rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner">
+                <p className="font-semibold text-slate-900">Öffnungszeiten</p>
+                <p>Mo–Fr: 08:00–22:00</p>
+                <p>Sa: 09:00–18:00</p>
+              </div>
+            </aside>
+
+            {/* Main Content */}
           <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-72">
-            <header className="sticky top-0 z-30 border-b border-sky-100/70 bg-[#c0e3ff]/80 backdrop-blur">
+            <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#c0e3ff] backdrop-blur">
               <div className="flex flex-col gap-4 px-4 py-4 sm:px-8">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
                     <button
                       type="button"
                       aria-label="Navigation umschalten"
@@ -209,15 +249,16 @@ export default function RootLayout({ children }) {
                         </svg>
                       )}
                     </button>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <Image
                         src={logo}
                         alt="SitCheck Logo"
-                        width={48}
-                        height={48}
-                        className="hidden h-12 w-12 rounded-full bg-white object-contain p-2 shadow sm:block"
+                        width={320}
+                        height={96}
+                        className="h-[4.5rem] w-auto flex-shrink-0 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] sm:h-[5.5rem] lg:h-[6.5rem]"
+                        priority
                       />
-                      <div>
+                      <div className="flex flex-col justify-center leading-tight">
                         <p className="text-xs uppercase tracking-widest text-slate-700">SitCheck</p>
                         <h1 className="text-lg font-semibold text-slate-900 sm:text-2xl">Raumübersicht</h1>
                       </div>
@@ -240,7 +281,7 @@ export default function RootLayout({ children }) {
 
                 <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-wide text-slate-600">
                   <span>Systemstatus: <span className="text-emerald-600">Online</span></span>
-                  <span className="hidden sm:inline">Standort: DHBW Learning Center · Mannheim</span>
+                  <span className="hidden sm:inline">Standort: DHBW Lesesaal · Mannheim</span>
                 </div>
 
                 <div className="relative w-full">
@@ -308,7 +349,7 @@ export default function RootLayout({ children }) {
 
             <main className="flex-1 px-4 pb-24 pt-6 sm:px-8 sm:pb-12 sm:pt-10">{children}</main>
 
-            <footer className="px-4 pb-28 pt-6 text-center text-xs text-slate-500 sm:pb-8 sm:text-sm">
+            <footer className="border-t border-slate-200 bg-[#c0e3ff] px-4 pb-28 pt-6 text-center text-xs text-slate-600 sm:pb-8 sm:text-sm">
               © 2025 DHBW Germany GmbH · Coblitzallee 1-9, 68163 Mannheim
             </footer>
           </div>

@@ -19,7 +19,7 @@ import { rooms } from "@/data/rooms";
 import { useAppData } from "@/context/AppDataContext";
 
 const CATEGORY_META = {
-  "Learning Center": {
+  "Lesesäle": {
     gradient: "from-sky-400 via-sky-500 to-sky-600",
     pieFill: "#0ea5e9",
   },

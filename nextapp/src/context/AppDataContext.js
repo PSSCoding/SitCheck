@@ -30,7 +30,7 @@ const createInitialBookings = () => {
       id: 2,
       roomId: 3,
       roomName: "Lesesaal 3",
-      category: "Learning Center",
+      category: "Lesesäle",
       dayOffset: 1,
       hour: 9,
       minute: 0,
