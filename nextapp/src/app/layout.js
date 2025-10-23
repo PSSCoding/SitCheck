@@ -175,15 +175,15 @@ export default function RootLayout({ children }) {
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
                 lg:relative lg:translate-x-0 lg:shadow-none`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <Image
                   src={logo}
                   alt="SitCheck Logo"
-                  width={56}
-                  height={56}
-                  className="h-14 w-14 rounded-full bg-white object-contain p-2 shadow"
+                  width={312}
+                  height={96}
+                  className="h-14 w-auto flex-shrink-0 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] sm:h-20"
                 />
-                <div>
+                <div className="flex flex-col justify-center">
                   <p className="text-xs uppercase tracking-wide text-slate-600">Campus Dashboard</p>
                   <h2 className="text-xl font-semibold text-slate-900">SitCheck</h2>
                 </div>
@@ -222,7 +222,7 @@ export default function RootLayout({ children }) {
             <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#c0e3ff] backdrop-blur">
               <div className="flex flex-col gap-4 px-4 py-4 sm:px-8">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
                     <button
                       type="button"
                       aria-label="Navigation umschalten"
@@ -249,16 +249,16 @@ export default function RootLayout({ children }) {
                         </svg>
                       )}
                     </button>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <Image
                         src={logo}
                         alt="SitCheck Logo"
-                        width={160}
-                        height={48}
-                        className="h-10 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
+                        width={320}
+                        height={96}
+                        className="h-12 w-auto flex-shrink-0 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)] sm:h-16 lg:h-20"
                         priority
                       />
-                      <div>
+                      <div className="flex flex-col justify-center leading-tight">
                         <p className="text-xs uppercase tracking-widest text-slate-700">SitCheck</p>
                         <h1 className="text-lg font-semibold text-slate-900 sm:text-2xl">Raumübersicht</h1>
                       </div>
