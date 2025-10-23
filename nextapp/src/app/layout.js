@@ -217,7 +217,7 @@ export default function RootLayout({ children }) {
               </div>
             </aside>
 
-          {/* Main Content */}
+            {/* Main Content */}
           <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-72">
             <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#c0e3ff] backdrop-blur">
               <div className="flex flex-col gap-4 px-4 py-4 sm:px-8">
@@ -253,9 +253,10 @@ export default function RootLayout({ children }) {
                       <Image
                         src={logo}
                         alt="SitCheck Logo"
-                        width={48}
+                        width={160}
                         height={48}
-                        className="hidden h-12 w-12 rounded-full bg-white object-contain p-2 shadow sm:block"
+                        className="h-10 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
+                        priority
                       />
                       <div>
                         <p className="text-xs uppercase tracking-widest text-slate-700">SitCheck</p>
