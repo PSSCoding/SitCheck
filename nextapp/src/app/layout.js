@@ -185,7 +185,7 @@ export default function RootLayout({ children }) {
                 />
                 <div className="flex flex-col justify-center">
                   <p className="text-xs uppercase tracking-wide text-slate-600">Campus Dashboard</p>
-                  <h2 className="text-xl font-semibold text-slate-900">SitCheck</h2>
+                  <h2 className="text-xl font-semibold text-slate-900">SITCHECK</h2>
                 </div>
               </div>
 
