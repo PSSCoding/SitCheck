@@ -16,6 +16,48 @@ let latestAverageUpdatedAt = null;
 app.use(cors());
 app.use(express.json());
 
+function validateAndComputeAverage(rows) {
+  if (!Array.isArray(rows)) {
+    throw new Error("Unerwartetes Datenformat: rows ist nicht vom Typ Array.");
+  }
+
+  const normalizedEntries = rows
+    .map((row, index) => {
+      const rawValue = row?.estimated_actual_persons;
+      const rawTimestamp = row?.timestamp;
+
+      const value = Number(rawValue);
+      const timestamp = rawTimestamp ? new Date(rawTimestamp) : null;
+
+      const isValidTimestamp = timestamp instanceof Date && !Number.isNaN(timestamp.valueOf());
+
+      if (!Number.isFinite(value) || !isValidTimestamp) {
+        console.warn(
+          `Eintrag ${index} aus ai_detection wird ignoriert (value: ${rawValue}, timestamp: ${rawTimestamp}).`,
+        );
+        return null;
+      }
+
+      return { value, timestamp };
+    })
+    .filter(Boolean);
+
+  if (normalizedEntries.length === 0) {
+    throw new Error("Es wurden keine gültigen Einträge in ai_detection gefunden.");
+  }
+
+  // Die SQL-Query liefert bereits DESC, wir halten die Reihenfolge für zusätzliche Sicherheit ein.
+  normalizedEntries.sort((a, b) => b.timestamp - a.timestamp);
+
+  const sum = normalizedEntries.reduce((acc, entry) => acc + entry.value, 0);
+  const average = Number((sum / normalizedEntries.length).toFixed(2));
+
+  return {
+    averagePersons: average,
+    latestTimestamp: normalizedEntries[0].timestamp.toISOString(),
+  };
+}
+
 // PostgreSQL-Verbindung
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -28,24 +70,16 @@ console.log(
 async function refreshAveragePersons() {
   try {
     const { rows } = await pool.query(
-      `SELECT estimated_actual_persons
-       FROM correlated_persons
+      `SELECT estimated_actual_persons, timestamp
+       FROM ai_detection
        ORDER BY timestamp DESC
        LIMIT 10`,
     );
 
-    const values = rows
-      .map((row) => Number(row.estimated_actual_persons))
-      .filter((value) => Number.isFinite(value));
+    const { averagePersons, latestTimestamp } = validateAndComputeAverage(rows);
 
-    if (values.length === 0) {
-      console.warn("Keine gültigen Daten für die Personenanzahl gefunden.");
-      return;
-    }
-
-    const sum = values.reduce((acc, value) => acc + value, 0);
-    latestAveragePersons = Number((sum / values.length).toFixed(2));
-    latestAverageUpdatedAt = new Date().toISOString();
+    latestAveragePersons = averagePersons;
+    latestAverageUpdatedAt = latestTimestamp;
   } catch (error) {
     console.error("Fehler beim Aktualisieren der Personenanzahl:", error);
   }
