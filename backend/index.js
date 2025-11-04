@@ -69,6 +69,7 @@ console.log(
 
 async function refreshAveragePersons() {
   try {
+    console.log("[occupancy] refreshAveragePersons triggered at", new Date().toISOString());
     const { rows } = await pool.query(
       `SELECT estimated_actual_persons, timestamp
        FROM ai_detection
