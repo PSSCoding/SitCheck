@@ -10,6 +10,9 @@ console.log("DB URL:", process.env.DATABASE_URL);
 const { Pool } = pkg;
 const app = express();
 
+let latestAveragePersons = null;
+let latestAverageUpdatedAt = null;
+
 app.use(cors());
 app.use(express.json());
 
@@ -18,7 +21,45 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-console.log("Endpoints bereit: GET /api/users, POST /api/users, GET /api/test");
+console.log(
+  "Endpoints bereit: GET /api/users, POST /api/users, GET /api/test, GET /api/occupancy",
+);
+
+async function refreshAveragePersons() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT estimated_actual_persons
+       FROM correlated_persons
+       ORDER BY timestamp DESC
+       LIMIT 10`,
+    );
+
+    const values = rows
+      .map((row) => Number(row.estimated_actual_persons))
+      .filter((value) => Number.isFinite(value));
+
+    if (values.length === 0) {
+      console.warn("Keine gültigen Daten für die Personenanzahl gefunden.");
+      return;
+    }
+
+    const sum = values.reduce((acc, value) => acc + value, 0);
+    latestAveragePersons = Number((sum / values.length).toFixed(2));
+    latestAverageUpdatedAt = new Date().toISOString();
+  } catch (error) {
+    console.error("Fehler beim Aktualisieren der Personenanzahl:", error);
+  }
+}
+
+refreshAveragePersons().catch((error) => {
+  console.error("Initiale Aktualisierung der Personenanzahl fehlgeschlagen:", error);
+});
+
+setInterval(() => {
+  refreshAveragePersons().catch((error) => {
+    console.error("Intervall-Aktualisierung der Personenanzahl fehlgeschlagen:", error);
+  });
+}, 60 * 1000);
 
 
 // ===== TEST ENDPOINT =====
@@ -30,6 +71,19 @@ app.get("/api/test", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: "DB-Verbindung fehlgeschlagen" });
   }
+});
+
+app.get("/api/occupancy", (req, res) => {
+  if (latestAveragePersons === null) {
+    return res
+      .status(503)
+      .json({ error: "Noch keine Auslastungsdaten verfügbar." });
+  }
+
+  res.json({
+    averagePersons: latestAveragePersons,
+    lastUpdated: latestAverageUpdatedAt,
+  });
 });
 
 // ===== USER ROUTES =====
