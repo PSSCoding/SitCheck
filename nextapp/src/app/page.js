@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { rooms } from "@/data/rooms";
@@ -67,11 +67,51 @@ export default function HomePage() {
   );
 
   const totalPeople = rooms.reduce((sum, room) => sum + room.people, 0);
+  const [currentPersons, setCurrentPersons] = useState(totalPeople);
   const totalCapacity = rooms.reduce((sum, room) => sum + room.capacity, 0);
   const freeSeats = Math.max(totalCapacity - totalPeople, 0);
   const averageUtilization = totalCapacity
     ? Math.round((totalPeople / totalCapacity) * 100)
     : 0;
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const envBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "");
+    const browserBaseUrl =
+      typeof window !== "undefined"
+        ? window.location.origin.replace(/\/$/, "")
+        : "";
+    const baseUrl = envBaseUrl || browserBaseUrl || "http://localhost:5000";
+
+    async function fetchOccupancy() {
+      try {
+        const response = await fetch(`${baseUrl}/api/occupancy`, {
+          signal: abortController.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (typeof data.averagePersons === "number") {
+          setCurrentPersons(Math.round(data.averagePersons));
+        }
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Fehler beim Laden der Auslastung:", error);
+        }
+      }
+    }
+
+    fetchOccupancy();
+    const intervalId = setInterval(fetchOccupancy, 60 * 1000);
+
+    return () => {
+      abortController.abort();
+      clearInterval(intervalId);
+    };
+  }, []);
 
   const normalizedBookings = useMemo(() => {
     const now = new Date();
@@ -199,7 +239,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 gap-3 text-sm text-slate-600 sm:grid-cols-3">
           {[
             { label: "Aktive Räume", value: rooms.length },
-            { label: "Personen aktuell", value: totalPeople },
+            { label: "Personen aktuell", value: currentPersons },
             { label: "Freie Plätze", value: freeSeats },
             { label: "Ø Auslastung", value: `${averageUtilization}%` },
           ].map((stat) => (
