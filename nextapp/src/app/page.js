@@ -88,11 +88,23 @@ export default function HomePage() {
   useEffect(() => {
     const abortController = new AbortController();
     const envBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "");
-    const browserBaseUrl =
-      typeof window !== "undefined"
-        ? window.location.origin.replace(/\/$/, "")
-        : "";
-    const baseUrl = envBaseUrl || browserBaseUrl || "http://localhost:5000";
+    let baseUrl = envBaseUrl;
+
+    if (!baseUrl) {
+      const defaultDevBaseUrl = "http://localhost:5000";
+
+      if (typeof window !== "undefined") {
+        const browserBaseUrl = window.location.origin.replace(/\/$/, "");
+        baseUrl =
+          process.env.NODE_ENV === "development"
+            ? defaultDevBaseUrl
+            : browserBaseUrl;
+      } else {
+        baseUrl = process.env.NODE_ENV === "development" ? defaultDevBaseUrl : "";
+      }
+    }
+
+    baseUrl = baseUrl || "http://localhost:5000";
 
     async function fetchOccupancy() {
       try {
