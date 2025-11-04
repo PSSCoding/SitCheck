@@ -26,6 +26,8 @@ function validateAndComputeAverage(rows) {
       const rawValue = row?.estimated_actual_persons;
       const rawTimestamp = row?.timestamp;
 
+      console.log("[occupancy] raw row", index, "value:", rawValue, "timestamp:", rawTimestamp);
+
       const value = Number(rawValue);
       const timestamp = rawTimestamp ? new Date(rawTimestamp) : null;
 
@@ -41,6 +43,8 @@ function validateAndComputeAverage(rows) {
       return { value, timestamp };
     })
     .filter(Boolean);
+
+  console.log("[occupancy] normalizedEntries count:", normalizedEntries.length);
 
   if (normalizedEntries.length === 0) {
     throw new Error("Es wurden keine gültigen Einträge in ai_detection gefunden.");
