@@ -39,7 +39,7 @@ function validateAndComputeAverage(rows) {
 
       if (!Number.isFinite(value) || !isValidTimestamp) {
         console.warn(
-          `Eintrag ${index} aus ai_detection wird ignoriert (value: ${rawValue}, timestamp: ${rawTimestamp}).`,
+          `Eintrag ${index} aus correlated_persons wird ignoriert (value: ${rawValue}, timestamp: ${rawTimestamp}).`,
         );
         return null;
       }
@@ -49,7 +49,7 @@ function validateAndComputeAverage(rows) {
     .filter(Boolean);
 
   if (normalizedEntries.length === 0) {
-    throw new Error("Es wurden keine gültigen Einträge in ai_detection gefunden.");
+    throw new Error("Es wurden keine gültigen Einträge in correlated_persons gefunden.");
   }
 
   // Die SQL-Query liefert bereits DESC, wir halten die Reihenfolge für zusätzliche Sicherheit ein.
@@ -78,7 +78,7 @@ async function refreshAveragePersons() {
     console.log("[occupancy] refreshAveragePersons triggered at", new Date().toISOString());
     const { rows } = await pool.query(
       `SELECT estimated_actual_persons, timestamp
-       FROM ai_detection
+       FROM correlated_persons
        ORDER BY timestamp DESC
        LIMIT 10`,
     );

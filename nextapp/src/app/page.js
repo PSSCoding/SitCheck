@@ -66,13 +66,24 @@ export default function HomePage() {
     }, {}),
   );
 
-  const totalPeople = rooms.reduce((sum, room) => sum + room.people, 0);
-  const [currentPersons, setCurrentPersons] = useState(totalPeople);
-  const totalCapacity = rooms.reduce((sum, room) => sum + room.capacity, 0);
-  const freeSeats = Math.max(totalCapacity - totalPeople, 0);
-  const averageUtilization = totalCapacity
-    ? Math.round((totalPeople / totalCapacity) * 100)
-    : 0;
+  const [currentPersons, setCurrentPersons] = useState(() =>
+    rooms.reduce((sum, room) => sum + room.people, 0),
+  );
+  const totalCapacity = useMemo(
+    () => rooms.reduce((sum, room) => sum + room.capacity, 0),
+    [],
+  );
+  const freeSeats = useMemo(
+    () => Math.max(totalCapacity - currentPersons, 0),
+    [totalCapacity, currentPersons],
+  );
+  const averageUtilization = useMemo(
+    () =>
+      totalCapacity
+        ? Math.round((currentPersons / totalCapacity) * 100)
+        : 0,
+    [totalCapacity, currentPersons],
+  );
 
   useEffect(() => {
     const abortController = new AbortController();
