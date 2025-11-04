@@ -5,7 +5,13 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 
 dotenv.config(); // Lädt die Variablen aus .env
-console.log("DB URL:", process.env.DATABASE_URL);
+if (typeof process.env.DATABASE_URL !== "string" || process.env.DATABASE_URL.trim() === "") {
+  console.error(
+    "Umgebungsvariable DATABASE_URL fehlt oder ist ungültig. Stelle sicher, dass sie in .env gesetzt ist.",
+  );
+  process.exit(1);
+}
+console.log("DB URL gefunden, erster Teil:", process.env.DATABASE_URL.slice(0, 20), "..."); // Truncated for safety
 
 const { Pool } = pkg;
 const app = express();
