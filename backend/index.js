@@ -75,11 +75,13 @@ async function refreshAveragePersons() {
        ORDER BY timestamp DESC
        LIMIT 10`,
     );
+    console.log("[occupancy] rows:", rows);
 
     const { averagePersons, latestTimestamp } = validateAndComputeAverage(rows);
 
     latestAveragePersons = averagePersons;
     latestAverageUpdatedAt = latestTimestamp;
+    console.log("[occupancy] latestAveragePersons:", latestAveragePersons, "latestAverageUpdatedAt:", latestAverageUpdatedAt);
   } catch (error) {
     console.error("Fehler beim Aktualisieren der Personenanzahl:", error);
   }
