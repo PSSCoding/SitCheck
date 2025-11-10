@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/favicon.ico/route": "/favicon.ico",
+  "/bookings/page": "/bookings",
+  "/favorites/page": "/favorites",
+  "/page": "/",
+  "/bookings/new/page": "/bookings/new",
+  "/rooms/[id]/page": "/rooms/[id]"
+}

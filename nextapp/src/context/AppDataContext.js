@@ -12,6 +12,7 @@ export const AppDataContext = createContext(null);
 
 const INITIAL_FAVORITES = [7, 3, 11];
 
+// Erstellt dynamische Buchungsdaten, damit Demo-Listen immer aktuelle Zeitstempel haben.
 const createInitialBookings = () => {
   const templates = [
     {
@@ -73,6 +74,7 @@ const createInitialBookings = () => {
 };
 
 export function AppDataProvider({ children }) {
+  // Demo-Daten werden zentral verwaltet, sodass jede Seite über den Context darauf zugreifen kann.
   const [favorites, setFavorites] = useState(INITIAL_FAVORITES);
   const [bookings, setBookings] = useState(createInitialBookings);
 
@@ -103,6 +105,7 @@ export function AppDataProvider({ children }) {
 }
 
 export function useAppData() {
+  // Hilfs-Hook kapselt den Zugriff und stellt sicher, dass der Provider verwendet wird.
   const context = useContext(AppDataContext);
   if (!context) {
     throw new Error("useAppData must be used within an AppDataContext provider");

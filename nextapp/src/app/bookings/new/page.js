@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { rooms } from "@/data/rooms";
 import { useAppData } from "@/context/AppDataContext";
 
+// Auswahlmöglichkeiten für häufig genutzte Buchungsdauern.
 const durationOptions = [
   { label: "30 Minuten", value: 30 },
   { label: "60 Minuten", value: 60 },
@@ -26,6 +27,7 @@ export default function NewBookingPage() {
   });
   const [confirmation, setConfirmation] = useState(null);
 
+  // Räume nach Kategorie gruppieren, damit die Dropdown-Liste strukturiert bleibt.
   const groupedRooms = useMemo(() => {
     return rooms.reduce((acc, room) => {
       if (!acc[room.type]) acc[room.type] = [];

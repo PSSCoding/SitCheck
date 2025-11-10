@@ -13,6 +13,7 @@ import { AppDataProvider, useAppData } from "@/context/AppDataContext";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+// Navigationsdefinition inklusive Icon-Renderern, damit Desktop- und Mobilmenü identisch bleiben.
 const NAV_ITEMS = [
   {
     label: "Dashboard",
@@ -86,6 +87,7 @@ const NAV_ITEMS = [
 function FavoritesSidebarSection() {
   const { favorites } = useAppData();
 
+  // Zeigt nur die ersten drei Favoriten, damit die Sidebar kompakt bleibt.
   const favoriteRooms = rooms
     .filter((room) => favorites.includes(room.id))
     .slice(0, 3);
@@ -127,12 +129,14 @@ export default function RootLayout({ children }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const pathname = usePathname();
 
+  // Schließe Sidebars und leere die Suche bei jeder Navigation.
   useEffect(() => {
     setSidebarOpen(false);
     setSearchTerm("");
     setSearchFocused(false);
   }, [pathname]);
 
+  // Vorschlagsliste reagiert auf die Tippgeschwindigkeit, aber erst ab zwei Zeichen.
   const suggestions = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (query.length < 2) return [];
@@ -217,8 +221,8 @@ export default function RootLayout({ children }) {
               </div>
             </aside>
 
-            {/* Main Content */}
-          <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-72">
+            {/* Hauptbereich mit Top-Bar, Inhalt und Footer */}
+            <div className="flex min-h-screen w-full flex-1 flex-col lg:pl-72">
             <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#c0e3ff] backdrop-blur">
               <div className="flex flex-col gap-4 px-4 py-4 sm:px-8">
                 <div className="flex items-center justify-between gap-3">
@@ -352,7 +356,7 @@ export default function RootLayout({ children }) {
             <footer className="border-t border-slate-200 bg-[#c0e3ff] px-4 pb-28 pt-6 text-center text-xs text-slate-600 sm:pb-8 sm:text-sm">
               © 2025 DHBW Germany GmbH · Coblitzallee 1-9, 68163 Mannheim
             </footer>
-          </div>
+            </div>
 
           {/* Mobile Bottom Navigation */}
           <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 py-2 backdrop-blur sm:hidden">

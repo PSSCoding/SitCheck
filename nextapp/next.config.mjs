@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-//  output: 'export',
+  output: 'export',
   images: { unoptimized: true },
-  basePath: '/SitCheck',     // z. B. '/archive-frontend'
-  assetPrefix: '/SitCheck/', // muss identisch zum basePath sein
+  distDir: '.next-local',
 };
 
 export default nextConfig;

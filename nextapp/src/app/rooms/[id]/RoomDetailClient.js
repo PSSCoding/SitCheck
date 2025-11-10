@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { useAppData } from "@/context/AppDataContext";
 
+// Meta-Informationen definieren Farbakzente für Diagramme je Raumtyp.
 const CATEGORY_META = {
   "Lesesäle": {
     gradient: "from-sky-400 via-sky-500 to-sky-600",
@@ -31,6 +32,7 @@ const CATEGORY_META = {
   },
 };
 
+// Vereinfacht simulierte Tagesverläufe für Chartdarstellungen.
 const baseTimeline = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"];
 const timelineFactors = [0.25, 0.42, 0.58, 0.74, 0.85, 0.7, 0.55, 0.38];
 
@@ -57,6 +59,7 @@ export default function RoomDetailClient({ room }) {
   const now = new Date();
   const currentHour = now.getHours();
 
+  // Leitet aus der Zeitachse Live-, Prognose- und Erwartungswerte für das Balkendiagramm ab.
   const chartData = baseTimeline.map((time, index) => {
     const slotHour = Number(time.split(":")[0]);
     const nextHour = index === baseTimeline.length - 1 ? 24 : Number(baseTimeline[index + 1].split(":")[0]);
@@ -84,6 +87,7 @@ export default function RoomDetailClient({ room }) {
     };
   });
 
+  // Beispielhafte zukünftige Zeitslots zur Visualisierung von Verfügbarkeiten.
   const upcomingSlots = [
     { offsetHours: 1, durationMinutes: 60, load: 0.45 },
     { offsetHours: 2, durationMinutes: 60, load: 0.6 },
@@ -109,6 +113,7 @@ export default function RoomDetailClient({ room }) {
   });
 
   const statusBadge = (() => {
+    // Einstufung der Auslastung für das Badging im Header.
     const ratio = room.people / room.capacity;
     if (ratio === 0) return { label: "Leer", color: "bg-slate-200 text-slate-800" };
     if (ratio <= 1 / 3) return { label: "Gering", color: "bg-emerald-500 text-white" };
@@ -117,6 +122,7 @@ export default function RoomDetailClient({ room }) {
     return { label: "Voll", color: "bg-rose-500 text-white" };
   })();
 
+  // Nutzerdefiniertes Tooltip für die Recharts-Komponenten.
   const renderTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     const entry = payload[0].payload;

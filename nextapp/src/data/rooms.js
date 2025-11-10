@@ -1,3 +1,4 @@
+// Statische Kapazitätsdaten, die als Basis für die Raumübersichten dienen.
 export const rooms = [
   { id: 1, name: "Lesesaal 1", people: 5, capacity: 50, type: "Lesesäle" },
   { id: 2, name: "Lesesaal 2", people: 20, capacity: 40, type: "Lesesäle" },

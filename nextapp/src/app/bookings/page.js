@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useAppData } from "@/context/AppDataContext";
 
+// Überschriftenformat für Tagesabschnitte.
 function formatDateHeading(isoString) {
   const date = new Date(isoString);
   return date.toLocaleDateString("de-DE", {
@@ -13,6 +14,7 @@ function formatDateHeading(isoString) {
   });
 }
 
+// Formatiert Start- und Endzeit im Stil „10:00 – 11:00 Uhr“.
 function formatTimeRange(startIso, endIso) {
   const start = new Date(startIso);
   const end = new Date(endIso);
@@ -24,6 +26,7 @@ export default function BookingsPage() {
   const { bookings, cancelBooking } = useAppData();
 
   const { upcoming, past } = useMemo(() => {
+    // Trenne aktuelle und vergangene Reservierungen und halte die Liste chronologisch.
     const now = new Date();
     const sorted = [...bookings].sort(
       (a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime(),
@@ -35,6 +38,7 @@ export default function BookingsPage() {
   }, [bookings]);
 
   const groupedUpcoming = useMemo(() => {
+    // Gruppiert aktive Termine nach Tag, damit die Darstellung kompakt bleibt.
     return upcoming.reduce((acc, booking) => {
       const key = new Date(booking.startDateTime).toDateString();
       if (!acc[key]) acc[key] = [];

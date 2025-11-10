@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { rooms } from "@/data/rooms";
 import { useAppData } from "@/context/AppDataContext";
 
+// Farbliche Hervorhebung für Favoriten je Kategorie.
 const CATEGORY_COLORS = {
   "Lesesäle": "from-sky-400 via-sky-500 to-sky-600",
   Gruppenräume: "from-amber-400 via-orange-400 to-orange-500",
@@ -15,11 +16,13 @@ export default function FavoritesPage() {
   const { favorites, toggleFavorite } = useAppData();
 
   const favoriteRooms = useMemo(
+    // Filtert alle Räume anhand der gemerkten IDs.
     () => rooms.filter((room) => favorites.includes(room.id)),
     [favorites],
   );
 
   const groupedFavorites = useMemo(() => {
+    // Gruppiert Favoriten nach Bereich für eine geordnete Ausgabe.
     return favoriteRooms.reduce((acc, room) => {
       if (!acc[room.type]) acc[room.type] = [];
       acc[room.type].push(room);

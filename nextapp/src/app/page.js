@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
 import { rooms } from "@/data/rooms";
 import { useAppData } from "@/context/AppDataContext";
 
+// Farbschemata für die drei Raumcluster.
 const CATEGORY_META = {
   "Lesesäle": {
     gradient: "from-sky-400 via-sky-500 to-sky-600",
@@ -51,6 +52,7 @@ const parseTimeToMinutes = (time) => {
   return hours * 60 + minutes;
 };
 
+// Sichtbares Zeitformat für die Mini-Cards.
 const formatTimeLabel = (isoString) =>
   new Date(isoString).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
@@ -66,26 +68,40 @@ export default function HomePage() {
     }, {}),
   );
 
-  const [currentPersons, setCurrentPersons] = useState(() =>
-    rooms.reduce((sum, room) => sum + room.people, 0),
+  const [currentPersons, setCurrentPersons] = useState(null);
+  const [occupancyHistory, setOccupancyHistory] = useState([]);
+  const normalizedCurrentPersons = useMemo(
+    () =>
+      typeof currentPersons === "number" && Number.isFinite(currentPersons)
+        ? currentPersons
+        : null,
+    [currentPersons],
   );
   const totalCapacity = useMemo(
     () => rooms.reduce((sum, room) => sum + room.capacity, 0),
     [],
   );
   const freeSeats = useMemo(
-    () => Math.max(totalCapacity - currentPersons, 0),
-    [totalCapacity, currentPersons],
+    () => {
+      if (normalizedCurrentPersons === null) {
+        return null;
+      }
+      return Math.max(totalCapacity - normalizedCurrentPersons, 0);
+    },
+    [totalCapacity, normalizedCurrentPersons],
   );
   const averageUtilization = useMemo(
-    () =>
-      totalCapacity
-        ? Math.round((currentPersons / totalCapacity) * 100)
-        : 0,
-    [totalCapacity, currentPersons],
+    () => {
+      if (!totalCapacity || normalizedCurrentPersons === null) {
+        return null;
+      }
+      return Math.round((normalizedCurrentPersons / totalCapacity) * 100);
+    },
+    [totalCapacity, normalizedCurrentPersons],
   );
 
   useEffect(() => {
+    // Fragt den Backend-Cache regelmäßig ab, um die Live-Auslastung im Dashboard anzuzeigen.
     const abortController = new AbortController();
     const envBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "");
     let baseUrl = envBaseUrl;
@@ -117,8 +133,15 @@ export default function HomePage() {
         }
 
         const data = await response.json();
-        if (typeof data.averagePersons === "number") {
+        if (typeof data.currentPersons === "number") {
+          setCurrentPersons(data.currentPersons);
+        } else if (typeof data.averagePersons === "number") {
           setCurrentPersons(Math.round(data.averagePersons));
+        }
+        if (Array.isArray(data.history)) {
+          setOccupancyHistory(data.history);
+        } else {
+          setOccupancyHistory([]);
         }
       } catch (error) {
         if (error.name !== "AbortError") {
@@ -128,7 +151,7 @@ export default function HomePage() {
     }
 
     fetchOccupancy();
-    const intervalId = setInterval(fetchOccupancy, 60 * 1000);
+    const intervalId = setInterval(fetchOccupancy, 5 * 1000);
 
     return () => {
       abortController.abort();
@@ -136,6 +159,7 @@ export default function HomePage() {
     };
   }, []);
 
+  // Bereite die Buchungslisten inklusive Anzeigeformaten vor.
   const normalizedBookings = useMemo(() => {
     const now = new Date();
     return bookings
@@ -178,6 +202,43 @@ export default function HomePage() {
     acc[type] = totals;
     return acc;
   }, {});
+
+  // Bereite die Historie sowohl für Liste als auch Diagramm auf.
+  const historyChronological = useMemo(() => {
+    if (!occupancyHistory.length) return [];
+    return occupancyHistory
+      .slice(-10)
+      .map((entry) => {
+        const date = new Date(entry.timestamp);
+        return {
+          ...entry,
+          timeLabel: date.toLocaleTimeString("de-DE", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          dateLabel: date.toLocaleDateString("de-DE", {
+            weekday: "short",
+            day: "2-digit",
+            month: "2-digit",
+          }),
+        };
+      });
+  }, [occupancyHistory]);
+
+  const recentHistory = useMemo(
+    () => [...historyChronological].reverse(),
+    [historyChronological],
+  );
+
+  // Recharts benötigt ein kompaktes Array mit X-Achsen-Labeln.
+  const historyChartData = useMemo(
+    () =>
+      historyChronological.map((entry) => ({
+        name: entry.timeLabel,
+        persons: entry.persons,
+      })),
+    [historyChronological],
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 pb-6 sm:gap-12">
@@ -262,18 +323,70 @@ export default function HomePage() {
         <div className="grid grid-cols-1 gap-3 text-sm text-slate-600 sm:grid-cols-3">
           {[
             { label: "Aktive Räume", value: rooms.length },
-            { label: "Personen aktuell", value: currentPersons },
+            { label: "Personen aktuell", value: normalizedCurrentPersons },
             { label: "Freie Plätze", value: freeSeats },
-            { label: "Ø Auslastung", value: `${averageUtilization}%` },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
-            >
-              <p className="text-xs uppercase tracking-wide text-slate-400">{stat.label}</p>
-              <p className="mt-3 text-2xl font-semibold text-slate-900">{stat.value}</p>
+            { label: "Ø Auslastung", value: averageUtilization, suffix: "%" },
+          ].map((stat) => {
+            const displayValue =
+              stat.value === null || typeof stat.value === "undefined"
+                ? "–"
+                : `${stat.value}${stat.suffix ?? ""}`;
+            return (
+              <div
+                key={stat.label}
+                className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+              >
+                <p className="text-xs uppercase tracking-wide text-slate-400">{stat.label}</p>
+                <p className="mt-3 text-2xl font-semibold text-slate-900">{displayValue}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Historie · Personen aktuell</p>
+              <p className="text-sm text-slate-500">Letzte Messpunkte aus dem Live-Zähler.</p>
             </div>
-          ))}
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              {recentHistory.length} Einträge
+            </span>
+          </div>
+          {recentHistory.length > 0 ? (
+            <>
+              {/* Kompakter Linienchart als visueller Verlauf */}
+              <div className="mb-6 w-full overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={historyChartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <YAxis allowDecimals={false} width={30} stroke="#94a3b8" />
+                    <Tooltip
+                      labelFormatter={(label) => `Zeit: ${label}`}
+                      formatter={(value) => [`${value} Personen`, "Live-Wert"]}
+                    />
+                    <Line type="monotone" dataKey="persons" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+                {recentHistory.map((entry) => (
+                  <div
+                    key={`${entry.timestamp}-${entry.persons}`}
+                    className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/60 px-4 py-2"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-xs uppercase tracking-wide text-slate-400">{entry.timeLabel} Uhr</span>
+                      <span className="text-sm font-semibold text-slate-900">{entry.dateLabel}</span>
+                    </div>
+                    <span className="text-xl font-semibold text-slate-900">{entry.persons}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-slate-500">Noch keine historischen Messwerte erhalten.</p>
+          )}
         </div>
       </section>
 
